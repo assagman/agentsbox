@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/agentsbox@latest/agentsbox.schema.json",
+  "$schema": "./agentsbox.schema.json",
   "mcp": {
     "time": {
       "type": "local",

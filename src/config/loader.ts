@@ -1,53 +1,112 @@
 // Use jsonc-parser ESM build to keep bundlers + Node ESM loaders happy.
 
-import { constants } from "node:fs";
+import { constants, existsSync } from "node:fs";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { parse } from "jsonc-parser/lib/esm/main.js";
 import { z } from "zod";
 import { ConfigSchema } from "./schema";
 
-/** npm package name for schema URL */
-const NPM_PACKAGE = "agentsbox";
-
 /**
- * Get the JSON Schema URL
- * Uses unpkg CDN with @latest for auto-updates on npm publish
+ * Schema reference inserted into generated config files.
+ *
+ * This project is not published yet, so we keep schema resolution local:
+ * - `agentsbox init` (CLI) copies `agentsbox.schema.json` next to `config.jsonc`
+ * - runtime auto-create also copies the schema when needed
  */
 export function getSchemaUrl(_version?: string): string {
-  return `https://unpkg.com/${NPM_PACKAGE}@latest/agentsbox.schema.json`;
+  return "./agentsbox.schema.json";
+}
+
+function findPackageRoot(): string | null {
+  // Works from:
+  // - src/* (dev)
+  // - dist/* (built)
+  // - bundled single-file outputs (import.meta.url points at the output file)
+  let dir = dirname(fileURLToPath(import.meta.url));
+
+  for (let i = 0; i < 10; i++) {
+    if (existsSync(join(dir, "agentsbox.schema.json")) || existsSync(join(dir, "package.json"))) {
+      return dir;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+
+  return null;
+}
+
+async function readBundledFile(relPath: string): Promise<string | null> {
+  const pkgRoot = findPackageRoot();
+  if (!pkgRoot) return null;
+
+  try {
+    return await readFile(join(pkgRoot, relPath), "utf-8");
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Generate default config content with schema reference
- * @param version - Package version for schema URL
- * @returns JSONC string with default config
+ * Generate a minimal default config.
+ *
+ * Intentionally creates an "empty" config (no MCP servers configured) so users
+ * can manage it later.
  */
 export function generateDefaultConfig(version: string): string {
-  const schemaUrl = getSchemaUrl(version);
+  const schemaRef = getSchemaUrl(version);
   return `{
-  "$schema": "${schemaUrl}",
+  "$schema": "${schemaRef}",
   "mcp": {
     // Add your MCP servers here
     // Example:
     // "time": {
     //   "type": "local",
-    //   "command": ["npx", "-y", "@anthropic/mcp-time"]
+    //   "command": ["uvx", "mcp-server-time"]
     // }
   },
   "settings": {
     "defaultLimit": 5,
-    "initMode": "eager"
+    "initMode": "eager",
+    "connection": {
+      "connectTimeout": 5000,
+      "requestTimeout": 30000,
+      "retryAttempts": 2,
+      "retryDelay": 1000
+    }
   }
 }
 `;
 }
 
+async function ensureLocalSchemaFile(configDir: string): Promise<void> {
+  const destSchemaPath = join(configDir, "agentsbox.schema.json");
+
+  try {
+    await access(destSchemaPath, constants.F_OK);
+    return; // already exists
+  } catch {
+    // missing: continue
+  }
+
+  const schemaContent = await readBundledFile("agentsbox.schema.json");
+  if (!schemaContent) return;
+
+  try {
+    await writeFile(destSchemaPath, schemaContent, "utf-8");
+  } catch {
+    // best-effort
+  }
+}
+
 /**
- * Create default config file if it doesn't exist
- * @param filePath - Path to config file
- * @param version - Package version for schema URL
- * @returns true if file was created, false if it already existed
+ * Create default config file if it doesn't exist.
+ *
+ * Also ensures a local schema file exists next to the config so `$schema` can be
+ * resolved without requiring npm publishing / unpkg.
  */
 export async function createDefaultConfigIfMissing(
   filePath: string,
@@ -61,11 +120,12 @@ export async function createDefaultConfigIfMissing(
       // missing: continue
     }
 
-    // Create directory if needed
     const dir = dirname(filePath);
     await mkdir(dir, { recursive: true });
 
-    // Write default config
+    // Best-effort: copy schema next to config.
+    await ensureLocalSchemaFile(dir);
+
     const content = generateDefaultConfig(version);
     await writeFile(filePath, content, "utf-8");
     return true;
@@ -103,9 +163,7 @@ function interpolateEnvVars(obj: any): any {
 }
 
 /**
- * Parse and validate agentsbox.jsonc config
- * @param jsonc - JSONC string (may contain comments)
- * @returns Zod validation result
+ * Parse and validate config JSONC
  */
 export function parseConfig(jsonc: string): ReturnType<typeof ConfigSchema.safeParse> {
   try {
@@ -134,8 +192,6 @@ export function parseConfig(jsonc: string): ReturnType<typeof ConfigSchema.safeP
 
 /**
  * Load config from file path
- * @param filePath - Path to config file
- * @returns Zod validation result
  */
 export async function loadConfig(
   filePath: string,

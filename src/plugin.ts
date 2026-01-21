@@ -7,11 +7,13 @@ import { createDefaultConfigIfMissing, loadConfig } from "./config";
 import { MCPManager } from "./mcp-client";
 import { globalProfiler } from "./profiler";
 import { BM25Index, MAX_REGEX_LENGTH, searchWithRegex } from "./search";
+import { PACKAGE_VERSION } from "./version";
 
-/** Package version for schema URL (temporary; will be derived from package.json during build) */
-const PACKAGE_VERSION = "0.10.4";
+function getXdgConfigHome(): string {
+  return process.env.XDG_CONFIG_HOME ?? `${process.env.HOME}/.config`;
+}
 
-const DEFAULT_CONFIG_PATH = `${process.env.HOME}/.config/agentsbox/config.jsonc`;
+const DEFAULT_CONFIG_PATH = `${getXdgConfigHome()}/agentsbox/config.jsonc`;
 const LOG_FILE_PATH = `${process.env.HOME}/.local/share/agentsbox/agentsbox.log`;
 const LOG_DIR = `${process.env.HOME}/.local/share/agentsbox`;
 
@@ -320,12 +322,13 @@ function generateSystemPrompt(configuredServers: string[]): string {
 /**
  * Toolbox Plugin - Tool Search Tool for OpenCode
  *
- * Provides on-demand access to MCP server tools through four tools:
+ * Provides on-demand access to MCP server tools through six tools:
  * - agentsbox_search_bm25: Natural language search
  * - agentsbox_search_regex: Pattern-based search
  * - agentsbox_execute: Execute discovered tools
  * - agentsbox_status: Get plugin and server status
  * - agentsbox_perf: Get performance metrics
+ * - agentsbox_test: Smoke-test configured MCP tools
  */
 export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
   const pluginLoadStart = performance.now();

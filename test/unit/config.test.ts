@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
-import { unlink } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   createDefaultConfigIfMissing,
   generateDefaultConfig,
@@ -195,7 +197,7 @@ test("empty config is invalid (needs at least one server)", () => {
 
 test("config with $schema field is valid", () => {
   const jsonc = `{
-    "$schema": "https://unpkg.com/agentsbox@latest/agentsbox.schema.json",
+    "$schema": "./agentsbox.schema.json",
     "mcp": {
       "time": {
         "type": "local",
@@ -208,26 +210,25 @@ test("config with $schema field is valid", () => {
   expect(result.success).toBe(true);
 
   if (result.success) {
-    expect(result.data.$schema).toBe("https://unpkg.com/agentsbox@latest/agentsbox.schema.json");
+    expect(result.data.$schema).toBe("./agentsbox.schema.json");
     expect(result.data.mcp).toHaveProperty("time");
   }
 });
 
-test("getSchemaUrl returns unpkg URL with @latest", () => {
+test("getSchemaUrl returns local schema reference", () => {
   const url = getSchemaUrl();
-  expect(url).toBe("https://unpkg.com/agentsbox@latest/agentsbox.schema.json");
+  expect(url).toBe("./agentsbox.schema.json");
 });
 
-test("getSchemaUrl ignores version parameter (uses @latest)", () => {
-  // Version parameter is ignored - always returns @latest URL
-  expect(getSchemaUrl("1.0.0")).toBe("https://unpkg.com/agentsbox@latest/agentsbox.schema.json");
-  expect(getSchemaUrl("2.5.3")).toBe("https://unpkg.com/agentsbox@latest/agentsbox.schema.json");
+test("getSchemaUrl ignores version parameter", () => {
+  expect(getSchemaUrl("1.0.0")).toBe("./agentsbox.schema.json");
+  expect(getSchemaUrl("2.5.3")).toBe("./agentsbox.schema.json");
 });
 
-test("generateDefaultConfig includes schema URL", () => {
+test("generateDefaultConfig includes schema reference", () => {
   const config = generateDefaultConfig("0.8.0");
   expect(config).toContain('"$schema"');
-  expect(config).toContain("unpkg.com/agentsbox@latest/agentsbox.schema.json");
+  expect(config).toContain("./agentsbox.schema.json");
 });
 
 test("generateDefaultConfig includes empty mcp object", () => {
@@ -249,7 +250,8 @@ test("generateDefaultConfig output is valid JSONC", () => {
 });
 
 test("createDefaultConfigIfMissing creates file when missing", async () => {
-  const testPath = "/tmp/toolbox-create-test-" + Date.now() + ".jsonc";
+  const dir = await mkdtemp(join(tmpdir(), "agentsbox-create-test-"));
+  const testPath = join(dir, "config.jsonc");
 
   try {
     const created = await createDefaultConfigIfMissing(testPath, "0.8.0");
@@ -264,15 +266,13 @@ test("createDefaultConfigIfMissing creates file when missing", async () => {
     const result = parseConfig(content);
     expect(result.success).toBe(true);
   } finally {
-    // Cleanup
-    try {
-      await unlink(testPath);
-    } catch {}
+    await rm(dir, { recursive: true, force: true });
   }
 });
 
 test("createDefaultConfigIfMissing does not overwrite existing file", async () => {
-  const testPath = "/tmp/toolbox-existing-test-" + Date.now() + ".jsonc";
+  const dir = await mkdtemp(join(tmpdir(), "agentsbox-existing-test-"));
+  const testPath = join(dir, "config.jsonc");
   const existingContent = '{"mcp": {}, "settings": {"defaultLimit": 10}}';
 
   try {
@@ -286,10 +286,7 @@ test("createDefaultConfigIfMissing does not overwrite existing file", async () =
     const content = await Bun.file(testPath).text();
     expect(content).toBe(existingContent);
   } finally {
-    // Cleanup
-    try {
-      await unlink(testPath);
-    } catch {}
+    await rm(dir, { recursive: true, force: true });
   }
 });
 

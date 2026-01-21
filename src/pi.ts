@@ -15,6 +15,7 @@ import {
   STATUS_DESC,
   TEST_DESC,
 } from "./runtime";
+import { PACKAGE_VERSION } from "./version";
 
 type PiExtensionAPI = {
   registerTool: (def: any) => void;
@@ -49,7 +50,7 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
   async function getRuntime() {
     if (!runtimePromise) {
       runtimePromise = createAgentsboxRuntime({
-        packageVersion: "0.10.4",
+        packageVersion: PACKAGE_VERSION,
         configPath: process.env.AGENTSBOX_CONFIG || getDefaultAgentsboxConfigPath(),
         // In pi, we want normal side effects (auto-create config) unless in tests.
         isTestEnv: process.env.NODE_ENV === "test" || !!process.env.BUN_TEST,

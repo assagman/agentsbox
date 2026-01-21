@@ -9,6 +9,8 @@ async function createSandboxPackageRoot(opts: { withDistPi: boolean }): Promise<
 
   await cp(join(repoRoot, "src"), join(sandboxRoot, "src"), { recursive: true });
   await cp(join(repoRoot, "skill"), join(sandboxRoot, "skill"), { recursive: true });
+  await cp(join(repoRoot, "agentsbox.schema.json"), join(sandboxRoot, "agentsbox.schema.json"));
+  await cp(join(repoRoot, "example-config.jsonc"), join(sandboxRoot, "example-config.jsonc"));
   await symlink(join(repoRoot, "node_modules"), join(sandboxRoot, "node_modules"));
 
   if (opts.withDistPi) {

@@ -10,6 +10,8 @@ async function createSandboxPackageRoot(): Promise<string> {
   // Copy sources so `getPkgRoot()` resolves to this sandbox (no shared dist/ state).
   await cp(join(repoRoot, "src"), join(sandboxRoot, "src"), { recursive: true });
   await cp(join(repoRoot, "skill"), join(sandboxRoot, "skill"), { recursive: true });
+  await cp(join(repoRoot, "agentsbox.schema.json"), join(sandboxRoot, "agentsbox.schema.json"));
+  await cp(join(repoRoot, "example-config.jsonc"), join(sandboxRoot, "example-config.jsonc"));
 
   // Reuse installed deps.
   await symlink(join(repoRoot, "node_modules"), join(sandboxRoot, "node_modules"));

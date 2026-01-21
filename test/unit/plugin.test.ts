@@ -35,7 +35,7 @@ describe("AgentsboxPlugin", () => {
     delete process.env.AGENTSBOX_CONFIG;
   });
 
-  test("returns all four tools when config is valid", async () => {
+  test("returns core tools when config is valid", async () => {
     // Create a temp config file
     const configPath = "/tmp/agentsbox-test-config.jsonc";
     await Bun.write(

@@ -1,7 +1,8 @@
 {
   "name": "agentsbox",
-  "version": "0.10.4",
-  "description": "Tool Search Tool Plugin for OpenCode - search and execute tools from MCP servers on-demand",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Tool-search facade for MCP servers (OpenCode + pi integrations)",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "type": "module",
@@ -41,6 +42,8 @@
   "files": [
     "dist",
     "README.md",
+    "CONFIG.md",
+    "example-config.jsonc",
     "agentsbox.schema.json",
     "skill"
   ],

@@ -48,7 +48,7 @@ Usage:
 
 Commands:
   init
-    Create ~/.config/agentsbox/config.jsonc + install bundled skill.
+    Create ~/.config/agentsbox/config.jsonc + agentsbox.schema.json + install bundled skill.
 
   setup opencode
     Install agentsbox as a local OpenCode plugin (auto-loaded).
@@ -310,15 +310,30 @@ async function planInit(opts: {
   const { configDir, force, pkgRoot } = opts;
 
   const configPath = join(configDir, "config.jsonc");
+  const srcSchemaFile = join(pkgRoot, "agentsbox.schema.json");
+  const destSchemaFile = join(configDir, "agentsbox.schema.json");
   const srcSkillDir = join(pkgRoot, "skill", "agentsbox");
   const destSkillDir = join(configDir, "skill", "agentsbox");
 
   const actions: Action[] = [];
   actions.push({ kind: "mkdir", path: configDir });
 
+  // Keep schema local (project is not published yet)
+  const schemaExists = await pathExists(destSchemaFile);
+  if (!schemaExists || force) {
+    actions.push({
+      kind: "copy",
+      from: srcSchemaFile,
+      to: destSchemaFile,
+      recursive: false,
+      mode: force ? "overwrite" : "copy-if-different",
+    });
+  }
+
   const configExists = await pathExists(configPath);
   if (!configExists || force) {
     const content = generateDefaultConfig("0.0.0");
+
     actions.push({
       kind: "write",
       path: configPath,

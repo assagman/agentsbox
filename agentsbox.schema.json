@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://unpkg.com/agentsbox@latest/agentsbox.schema.json",
+  "$id": "agentsbox.schema.json",
   "allowTrailingCommas": true,
   "allowComments": true,
   "title": "agentsbox Configuration",
