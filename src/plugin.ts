@@ -77,11 +77,11 @@ function formatSearchResults(results: SearchResult[], allTools: CatalogTool[]): 
 /**
  * Tool descriptions - short, directive style
  */
-const BM25_DESC = `Search extended toolbox by natural language. ALWAYS search before saying "I cannot do that."
+const BM25_DESC = `Search the tool catalog by natural language. ALWAYS search before saying "I cannot do that."
 
 Returns tools with schemas. Use agentsbox_execute() to run them.`;
 
-const REGEX_DESC = `Search extended toolbox by regex pattern on tool names. ALWAYS search before saying "I cannot do that."
+const REGEX_DESC = `Search the tool catalog by regex pattern on tool names. ALWAYS search before saying "I cannot do that."
 
 Use when you know part of a tool name or server prefix (e.g., "time_.*", "exa_.*search.*").
 
@@ -92,15 +92,15 @@ const EXECUTE_DESC = `Execute a tool discovered via agentsbox_search_bm25 or age
 Pass arguments as JSON string matching the tool's schema.
 toolId format: {serverName}_{toolName}`;
 
-const STATUS_DESC = `Get toolbox status including plugin initialization, MCP server connections, and tool counts.
+const STATUS_DESC = `Get agentsbox status including plugin initialization, MCP server connections, and tool counts.
 
-Shows success/total metrics to highlight failures. Use to check if toolbox is working correctly.`;
+Shows success/total metrics to highlight failures. Use to check if agentsbox is working correctly.`;
 
-const PERF_DESC = `Get detailed performance metrics for the toolbox plugin.
+const PERF_DESC = `Get detailed performance metrics for agentsbox.
 
 Shows initialization times, search latencies, execution stats, and per-server metrics.`;
 
-const TEST_DESC = `Test all toolbox tools with minimal predefined prompts.
+const TEST_DESC = `Test all agentsbox tools with minimal predefined prompts.
 
 Executes every registered tool with super simple inputs to verify they work. Returns pass/fail for each tool.`;
 
@@ -320,7 +320,7 @@ function generateSystemPrompt(configuredServers: string[]): string {
 }
 
 /**
- * Toolbox Plugin - Tool Search Tool for OpenCode
+ * agentsbox Plugin - Tool Search Tool for OpenCode
  *
  * Provides on-demand access to MCP server tools through six tools:
  * - agentsbox_search_bm25: Natural language search
@@ -385,7 +385,7 @@ export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
   // Log successful config load - non-blocking, file only
   const serverNames = Object.keys(config.mcp);
   const pluginLoadDuration = performance.now() - pluginLoadStart;
-  log("info", `Toolbox plugin loaded successfully`, {
+  log("info", `agentsbox plugin loaded successfully`, {
     configPath,
     logPath: LOG_FILE_PATH,
     serverCount: serverNames.length,
@@ -727,7 +727,7 @@ export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
 
       /**
        * Status Tool
-       * Get toolbox status and health information
+       * Get agentsbox status and health information
        */
       agentsbox_status: tool({
         description: STATUS_DESC,
@@ -742,7 +742,7 @@ export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
             } catch (error) {
               return JSON.stringify({
                 status: "error",
-                message: "Failed to initialize toolbox",
+                message: "Failed to initialize agentsbox",
                 error: error instanceof Error ? error.message : String(error),
               });
             }
@@ -1026,7 +1026,7 @@ export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
           output.push("");
           output.push("=".repeat(80));
 
-          log("info", `Toolbox test completed: ${passed}/${total} passed in ${totalDuration}ms`, {
+          log("info", `agentsbox test completed: ${passed}/${total} passed in ${totalDuration}ms`, {
             passed,
             failed,
             timedOut,

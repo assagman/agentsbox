@@ -12,11 +12,11 @@ import { BM25Index, MAX_REGEX_LENGTH, searchWithRegex } from "./search";
  * Tool descriptions - short, directive style
  * Exported so integrations can reuse (OpenCode + pi)
  */
-export const BM25_DESC = `Search extended toolbox by natural language. ALWAYS search before saying "I cannot do that."
+export const BM25_DESC = `Search the tool catalog by natural language. ALWAYS search before saying "I cannot do that."
 
 Returns tools with schemas. Use agentsbox_execute() to run them.`;
 
-export const REGEX_DESC = `Search extended toolbox by regex pattern on tool names. ALWAYS search before saying "I cannot do that."
+export const REGEX_DESC = `Search the tool catalog by regex pattern on tool names. ALWAYS search before saying "I cannot do that."
 
 Use when you know part of a tool name or server prefix (e.g., "time_.*", "exa_.*search.*").
 
@@ -27,15 +27,15 @@ export const EXECUTE_DESC = `Execute a tool discovered via agentsbox_search_bm25
 Pass arguments as JSON string matching the tool's schema.
 toolId format: {serverName}_{toolName}`;
 
-export const STATUS_DESC = `Get toolbox status including plugin initialization, MCP server connections, and tool counts.
+export const STATUS_DESC = `Get agentsbox status including plugin initialization, MCP server connections, and tool counts.
 
-Shows success/total metrics to highlight failures. Use to check if toolbox is working correctly.`;
+Shows success/total metrics to highlight failures. Use to check if agentsbox is working correctly.`;
 
-export const PERF_DESC = `Get detailed performance metrics for the toolbox.
+export const PERF_DESC = `Get detailed performance metrics for agentsbox.
 
 Shows initialization times, search latencies, execution stats, and per-server metrics.`;
 
-export const TEST_DESC = `Test all toolbox tools with minimal predefined prompts.
+export const TEST_DESC = `Test all agentsbox tools with minimal predefined prompts.
 
 Executes every registered tool with super simple inputs to verify they work. Returns pass/fail for each tool.`;
 
@@ -526,7 +526,7 @@ export async function createAgentsboxRuntime(
       } catch (error) {
         return JSON.stringify({
           status: "error",
-          message: "Failed to initialize toolbox",
+          message: "Failed to initialize agentsbox",
           error: error instanceof Error ? error.message : String(error),
         });
       }

@@ -4,7 +4,7 @@ import { FakeMCPClient, FakeToolHandlers, FakeTools, MCPManager } from "../../sr
 import { BM25Index, searchWithRegex } from "../../src/search";
 
 /**
- * E2E tests for the full Toolbox flow:
+ * E2E tests for the full agentsbox flow:
  * 1. Initialize with fake MCP servers
  * 2. Search for tools (BM25 or regex)
  * 3. Get tool schemas

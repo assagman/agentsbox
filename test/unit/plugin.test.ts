@@ -80,7 +80,7 @@ describe("agentsbox_search_bm25 schema", () => {
   });
 
   test("has description with directive", () => {
-    expect(bm25Tool.description).toContain("extended toolbox");
+    expect(bm25Tool.description).toContain("tool catalog");
     expect(bm25Tool.description).toContain("ALWAYS search");
   });
 

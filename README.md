@@ -2,6 +2,8 @@
 
 Tool-search facade for MCP servers (OpenCode + pi integrations).
 
+This repository is the generic, standalone form of the former `opencode-toolbox` package.
+
 ## Status
 
 This repository is **not published to npm yet** (package.json is `private: true`).

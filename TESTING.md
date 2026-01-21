@@ -1,120 +1,63 @@
-# Testing Guide for agentsbox
+# Testing Guide (agentsbox)
 
-## Running Tests
+## 1) Run tests
 
 ```bash
-# Run all tests
 bun test
-
-# Run with coverage
 bun test --coverage
-
-# Run specific test file
 bun test test/unit/config.test.ts
 ```
 
-## Test Coverage
+## 2) Manual OpenCode integration smoke test (CLI-only)
 
-Current coverage: **72.80% function, 74.33% line**
+Prereqs:
+- OpenCode installed
+- One or more MCP servers configured in `~/.config/agentsbox/config.jsonc`
 
-Note: Full coverage isn't possible without:
-- Testing actual stdio process spawning (requires real MCP servers)
-- Testing HTTP/SSE connections (requires network)
-- Testing full MCP protocol flows (requires integration)
+Steps:
 
-## Integration with OpenCode
-
-### Manual Testing
-
-To manually test with OpenCode:
-
-1. **Create test config:**
+1. Build the package:
    ```bash
-   mkdir -p ~/.config/opencode
-   cp example-config.jsonc ~/.config/opencode/agentsbox.jsonc
+   bun install
+   bun run build
    ```
 
-2. **Configure OpenCode:**
-   Add to `opencode.jsonc`:
-   ```jsonc
-   {
-     "mcp": {
-       "toolbox": {
-         "type": "local",
-         "command": ["bun", "run", "dist/index.js"]
-       }
-     }
-   }
+2. Create local config + bundled skill:
+   ```bash
+   bun dist/cli.js init
    ```
 
-3. **Start OpenCode** with the config
+3. Install the OpenCode shim plugin:
+   ```bash
+   bun dist/cli.js setup opencode
+   ```
 
-4. **Test search tools:**
-   - Ask the model to use `agentsbox_search_bm25`
-   - Query: "send email"
-   - Verify that tools are discovered and activated
+4. Verify the plugin file exists:
+   ```bash
+   ls -la "$XDG_CONFIG_HOME/opencode/plugins/agentsbox.js"
+   ```
 
-5. **Test activated tools:**
-   - Ask the model to call the discovered tool
-   - Verify the tool call works
+5. Start OpenCode and run:
+   - `agentsbox_status({})`
+   - `agentsbox_search_bm25({ text: "time", limit: 5 })`
 
-### Automated Testing (Simulated)
+Expected:
+- `agentsbox_status` reports configured servers and tool counts.
+- Search returns matching tool IDs with schemas.
 
-Run the full integration test suite:
+## 3) Notes on coverage limits
 
-```bash
-bun test test/integration/
-```
+Full coverage is not practical without:
+- spawning real stdio MCP servers
+- exercising real HTTP/SSE MCP connections
+- running a full agent runtime end-to-end
 
-This tests:
-- Server initialization with various configs
-- Activation limit enforcement
-- Multiple server connections
-- MCP client connections
-
-## Testing Checklist
+## 4) Checklist
 
 - [x] Unit tests for config parsing
 - [x] Unit tests for BM25 search
 - [x] Unit tests for regex search
-- [x] Unit tests for tool catalog
-- [x] Unit tests for activation manager
-- [x] Unit tests for MCP client (FakeMCPClient)
-- [x] Integration tests for ToolboxServer
-- [ ] Manual testing with OpenCode
-- [ ] End-to-end testing with real MCP servers
-
-## Debugging
-
-### Enable Debug Logging
-
-To see what the server is doing:
-
-```bash
-DEBUG=* bun run dist/index.js
-```
-
-Or in the code, add console.error() statements to track execution flow.
-
-### Common Issues
-
-**Issue:** Tools not appearing in OpenCode
-
-**Solution:**
-1. Check that `agentsbox.jsonc` path is correct
-2. Verify OpenCode logs for connection errors
-3. Check that underlying MCP servers are configured correctly
-
-**Issue:** Search finds no tools
-
-**Solution:**
-1. Verify that underlying MCP servers connected successfully
-2. Check tool descriptions for relevant keywords
-3. Try broader search terms
-
-**Issue:** Activated tools not working
-
-**Solution:**
-1. Check that underlying MCP server is running
-2. Verify environment variables are set correctly
-3. Check server logs for routing errors
+- [x] Unit tests for catalog formatting
+- [x] Unit tests for MCP manager via fakes
+- [ ] Manual smoke test with OpenCode
+- [ ] End-to-end test with real MCP servers

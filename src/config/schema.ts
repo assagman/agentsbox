@@ -66,7 +66,7 @@ export const SettingsConfigSchema = z.object({
 });
 
 /**
- * Toolbox Plugin configuration schema
+ * agentsbox configuration schema
  * Located at ~/.config/agentsbox/config.jsonc
  */
 export const ConfigSchema = z.object({
