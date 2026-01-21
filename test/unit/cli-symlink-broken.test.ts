@@ -15,7 +15,11 @@ async function createSandboxPackageRoot(opts: { withDistPi: boolean }): Promise<
     const distDir = join(sandboxRoot, "dist");
     await mkdir(distDir, { recursive: true });
     // CLI only checks existence during apply, so a small placeholder is sufficient.
-    await writeFile(join(distDir, "pi.js"), "export default function agentsboxPiExtension() {}\n", "utf8");
+    await writeFile(
+      join(distDir, "pi.js"),
+      "export default function agentsboxPiExtension() {}\n",
+      "utf8",
+    );
   }
 
   return sandboxRoot;

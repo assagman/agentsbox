@@ -1,5 +1,5 @@
-import { test, expect, describe, beforeEach } from "bun:test";
-import { Profiler, globalProfiler } from "../../src/profiler";
+import { beforeEach, describe, expect, test } from "bun:test";
+import { globalProfiler, Profiler } from "../../src/profiler";
 
 describe("Profiler", () => {
   let profiler: Profiler;

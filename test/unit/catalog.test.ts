@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test";
+import { expect, test } from "bun:test";
 import { normalizeTool, normalizeTools } from "../../src/catalog/catalog";
 
 test("normalizeTool creates correct structure", () => {
@@ -86,7 +86,7 @@ test("normalizeTool builds searchable text", () => {
 
   // Searchable text includes qualified name, original name, description, and args
   expect(catalogTool.searchableText).toBe(
-    "gmail_send_email send_email Send an email message via Gmail to Recipient email address"
+    "gmail_send_email send_email Send an email message via Gmail to Recipient email address",
   );
 });
 
@@ -171,7 +171,7 @@ test("normalizeTool handles boolean properties", () => {
     inputSchema: {
       type: "object" as const,
       properties: {
-        enabled: {} as any,  // Empty object for required property
+        enabled: {} as any, // Empty object for required property
       },
     },
   };
@@ -190,7 +190,7 @@ test("normalizeTool handles boolean properties", () => {
     inputSchema: {
       type: "object" as const,
       properties: {
-        enabled: {} as any,  // Empty object for required property
+        enabled: {} as any, // Empty object for required property
       },
     },
   };

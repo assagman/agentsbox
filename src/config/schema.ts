@@ -7,7 +7,10 @@ import { z } from "zod";
 export const LocalServerConfigSchema = z.object({
   type: z.literal("local"),
   command: z.array(z.string()).min(1).describe("Command and arguments to spawn the MCP server"),
-  environment: z.record(z.string(), z.string()).optional().describe("Environment variables for the process"),
+  environment: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe("Environment variables for the process"),
 });
 
 /**
@@ -30,12 +33,7 @@ export const ServerConfigSchema = z
     }),
   })
   .passthrough()
-  .pipe(
-    z.discriminatedUnion("type", [
-      LocalServerConfigSchema,
-      RemoteServerConfigSchema,
-    ])
-  );
+  .pipe(z.discriminatedUnion("type", [LocalServerConfigSchema, RemoteServerConfigSchema]));
 
 /**
  * Connection settings for MCP servers
@@ -57,7 +55,7 @@ export const ConnectionConfigSchema = z.object({
 export const SettingsConfigSchema = z.object({
   /** Default number of search results to return */
   defaultLimit: z.number().min(1).max(20).default(5),
-  /** 
+  /**
    * Initialization mode:
    * - "eager": Start connecting to servers immediately on plugin load (non-blocking)
    * - "lazy": Connect only when first tool is used (default for backward compat)

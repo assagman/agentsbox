@@ -1,9 +1,8 @@
-import { test, expect, describe } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import {
+  type RemoteClientLike,
   RemoteMCPClient,
   type RemoteTransport,
-  type RemoteClientLike,
-  type RemoteMCPClientOptions,
 } from "../../src/mcp-client/remote";
 
 /**
@@ -15,8 +14,8 @@ function createMockClientFactory(options?: {
   tools?: any[];
   callToolResult?: any;
 }): (name: string) => RemoteClientLike {
-  return (name: string) => ({
-    async connect(transport: RemoteTransport): Promise<void> {
+  return (_name: string) => ({
+    async connect(_transport: RemoteTransport): Promise<void> {
       if (options?.failConnect) {
         throw new Error("Connection failed");
       }
@@ -27,7 +26,7 @@ function createMockClientFactory(options?: {
       }
       return { tools: options?.tools ?? [] };
     },
-    async callTool(request: { name: string; arguments: Record<string, unknown> }): Promise<any> {
+    async callTool(_request: { name: string; arguments: Record<string, unknown> }): Promise<any> {
       return options?.callToolResult ?? { content: [{ type: "text", text: "ok" }] };
     },
   });
@@ -61,7 +60,7 @@ describe("RemoteMCPClient", () => {
     test("accepts custom client factory", () => {
       const client = new RemoteMCPClient(
         { name: "test", type: "remote", url: "https://example.com" },
-        { clientFactory: createMockClientFactory() }
+        { clientFactory: createMockClientFactory() },
       );
       expect(client).toBeDefined();
     });
@@ -71,7 +70,7 @@ describe("RemoteMCPClient", () => {
     test("throws when URL is missing", async () => {
       const client = new RemoteMCPClient(
         { name: "test", type: "remote" },
-        { clientFactory: createMockClientFactory() }
+        { clientFactory: createMockClientFactory() },
       );
 
       await expect(client.connect()).rejects.toThrow("has no URL");
@@ -83,7 +82,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -97,8 +96,8 @@ describe("RemoteMCPClient", () => {
       const client = new RemoteMCPClient(
         { name: "test", type: "remote", url: "https://example.com/mcp" },
         {
-          clientFactory: (name) => ({
-            async connect(transport: RemoteTransport): Promise<void> {
+          clientFactory: (_name) => ({
+            async connect(_transport: RemoteTransport): Promise<void> {
               // Fail on first attempt (streamable), succeed on second (SSE)
               if (streamableAttempts === 0 && sseAttempts === 0) {
                 streamableAttempts++;
@@ -119,7 +118,7 @@ describe("RemoteMCPClient", () => {
           sseTransportFactory: () => ({
             async close() {},
           }),
-        }
+        },
       );
 
       await client.connect();
@@ -136,7 +135,7 @@ describe("RemoteMCPClient", () => {
           clientFactory: createMockClientFactory({ failConnect: true }),
           streamableTransportFactory: createMockTransportFactory(),
           sseTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await expect(client.connect()).rejects.toThrow("Connection failed");
@@ -144,7 +143,7 @@ describe("RemoteMCPClient", () => {
     });
 
     test("passes headers to streamable transport", async () => {
-      let capturedUrl: URL | null = null;
+      let capturedUrl!: string;
       let capturedHeaders: Record<string, string> | undefined;
 
       const client = new RemoteMCPClient(
@@ -157,16 +156,16 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           streamableTransportFactory: (url, headers) => {
-            capturedUrl = url;
+            capturedUrl = url.toString();
             capturedHeaders = headers;
             return { close: async () => {} };
           },
-        }
+        },
       );
 
       await client.connect();
 
-      expect(capturedUrl?.href).toBe("https://example.com/mcp");
+      expect(capturedUrl).toBe("https://example.com/mcp");
       expect(capturedHeaders?.Authorization).toBe("Bearer token123");
     });
 
@@ -181,8 +180,8 @@ describe("RemoteMCPClient", () => {
           headers: { "X-Custom": "value" },
         },
         {
-          clientFactory: (name) => ({
-            async connect(transport: RemoteTransport): Promise<void> {
+          clientFactory: (_name) => ({
+            async connect(_transport: RemoteTransport): Promise<void> {
               // Fail first (streamable), succeed second (SSE)
               if (capturedHeaders === null) {
                 throw new Error("Streamable failed");
@@ -198,11 +197,11 @@ describe("RemoteMCPClient", () => {
           streamableTransportFactory: () => ({
             async close() {},
           }),
-          sseTransportFactory: (url, headers) => {
+          sseTransportFactory: (_url, headers) => {
             capturedHeaders = headers;
             return { close: async () => {} };
           },
-        }
+        },
       );
 
       await client.connect();
@@ -225,7 +224,7 @@ describe("RemoteMCPClient", () => {
             },
           }),
           sseTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await expect(client.connect()).rejects.toThrow();
@@ -245,7 +244,7 @@ describe("RemoteMCPClient", () => {
               sseClosed = true;
             },
           }),
-        }
+        },
       );
 
       await expect(client.connect()).rejects.toThrow();
@@ -258,10 +257,10 @@ describe("RemoteMCPClient", () => {
       const client = new RemoteMCPClient(
         { name: "test", type: "remote", url: "https://example.com/mcp" },
         {
-          clientFactory: (name) => {
+          clientFactory: (_name) => {
             clientCreations++;
             return {
-              async connect(transport: RemoteTransport): Promise<void> {
+              async connect(_transport: RemoteTransport): Promise<void> {
                 // Fail on first attempt
                 if (clientCreations === 1) {
                   throw new Error("Streamable failed");
@@ -277,7 +276,7 @@ describe("RemoteMCPClient", () => {
           },
           streamableTransportFactory: createMockTransportFactory(),
           sseTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -296,7 +295,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ tools: mockTools }),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -313,7 +312,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ tools: mockTools }),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -332,7 +331,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ callToolResult: expectedResult }),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -355,7 +354,7 @@ describe("RemoteMCPClient", () => {
               transportClosed = true;
             },
           }),
-        }
+        },
       );
 
       await client.connect();
@@ -376,7 +375,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -390,7 +389,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.close(); // Should not throw
@@ -401,7 +400,7 @@ describe("RemoteMCPClient", () => {
     test("returns null before connect", () => {
       const client = new RemoteMCPClient(
         { name: "test", type: "remote", url: "https://example.com/mcp" },
-        { clientFactory: createMockClientFactory() }
+        { clientFactory: createMockClientFactory() },
       );
 
       expect(client.getTransportType()).toBeNull();
@@ -413,7 +412,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -426,8 +425,8 @@ describe("RemoteMCPClient", () => {
       const client = new RemoteMCPClient(
         { name: "test", type: "remote", url: "https://example.com/mcp" },
         {
-          clientFactory: (name) => ({
-            async connect(transport: RemoteTransport): Promise<void> {
+          clientFactory: (_name) => ({
+            async connect(_transport: RemoteTransport): Promise<void> {
               if (isFirstAttempt) {
                 isFirstAttempt = false;
                 throw new Error("Streamable failed");
@@ -442,7 +441,7 @@ describe("RemoteMCPClient", () => {
           }),
           streamableTransportFactory: createMockTransportFactory(),
           sseTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -457,7 +456,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -472,7 +471,7 @@ describe("RemoteMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ tools: mockTools }),
           streamableTransportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();

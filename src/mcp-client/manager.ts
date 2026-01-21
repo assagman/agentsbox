@@ -1,11 +1,11 @@
-import { EventEmitter } from "events";
-import type { MCPServerConfig, MCPServer, MCPClient } from "./types";
-import type { ConnectionConfig } from "../config";
+import { EventEmitter } from "node:events";
+import type { CatalogTool } from "../catalog";
 import { normalizeTools } from "../catalog";
+import type { ConnectionConfig } from "../config";
+import { globalProfiler } from "../profiler";
 import { LocalMCPClient } from "./local";
 import { RemoteMCPClient } from "./remote";
-import { globalProfiler } from "../profiler";
-import type { CatalogTool } from "../catalog";
+import type { MCPClient, MCPServer, MCPServerConfig } from "./types";
 
 /**
  * Factory function type for creating MCP clients
@@ -54,7 +54,7 @@ const DEFAULT_CONNECTION_CONFIG: ConnectionConfig = {
  * Sleep for specified milliseconds
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -63,9 +63,7 @@ function sleep(ms: number): Promise<void> {
 function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
   return Promise.race([
     promise,
-    new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error(errorMessage)), ms)
-    ),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(errorMessage)), ms)),
   ]);
 }
 
@@ -74,7 +72,7 @@ export class MCPManager extends EventEmitter {
   private clients: Map<string, MCPClient>;
   private clientFactory: MCPClientFactory;
   private connectionConfig: ConnectionConfig;
-  
+
   // Initialization state
   private initState: InitState = "idle";
   private initPromise: Promise<void> | null = null;
@@ -119,11 +117,9 @@ export class MCPManager extends EventEmitter {
     this.serversCompleted = 0;
 
     // Start all connections concurrently
-    const promises = Object.entries(servers).map(
-      async ([name, config]) => {
-        return this.connectServerWithRetry(name, config);
-      }
-    );
+    const promises = Object.entries(servers).map(async ([name, config]) => {
+      return this.connectServerWithRetry(name, config);
+    });
 
     // Create the init promise but don't await it here
     this.initPromise = Promise.all(promises).then(() => {
@@ -149,8 +145,8 @@ export class MCPManager extends EventEmitter {
    */
   private finalizeInit(): void {
     const allServers = Array.from(this.servers.values());
-    const connected = allServers.filter(s => s.status === "connected");
-    const failed = allServers.filter(s => s.status === "error");
+    const connected = allServers.filter((s) => s.status === "connected");
+    const _failed = allServers.filter((s) => s.status === "error");
 
     if (connected.length === allServers.length) {
       this.initState = "ready";
@@ -167,10 +163,7 @@ export class MCPManager extends EventEmitter {
   /**
    * Connect to a server with retry logic
    */
-  private async connectServerWithRetry(
-    name: string,
-    config: MCPServerConfig
-  ): Promise<void> {
+  private async connectServerWithRetry(name: string, config: MCPServerConfig): Promise<void> {
     const maxAttempts = this.connectionConfig.retryAttempts + 1;
     let lastError: Error | null = null;
 
@@ -180,11 +173,11 @@ export class MCPManager extends EventEmitter {
         return; // Success
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         if (attempt < maxAttempts) {
           // Exponential backoff based on retryDelay (base)
           const baseDelay = this.connectionConfig.retryDelay;
-          const exponentialDelay = baseDelay * Math.pow(2, attempt - 1);
+          const exponentialDelay = baseDelay * 2 ** (attempt - 1);
           // Cap to 30s to avoid excessively long waits
           const delayMs = Math.min(exponentialDelay, 30000);
           await sleep(delayMs);
@@ -201,13 +194,7 @@ export class MCPManager extends EventEmitter {
       error: lastError?.message || "Connection failed after retries",
     });
 
-    globalProfiler.recordServerConnect(
-      name,
-      -1,
-      0,
-      "error",
-      lastError?.message
-    );
+    globalProfiler.recordServerConnect(name, -1, 0, "error", lastError?.message);
 
     this.emit("server:error", name, lastError?.message || "Unknown error");
     this.checkPartialReady();
@@ -216,12 +203,9 @@ export class MCPManager extends EventEmitter {
   /**
    * Connect to a single MCP server
    */
-  private async connectServer(
-    name: string,
-    config: MCPServerConfig
-  ): Promise<void> {
+  private async connectServer(name: string, config: MCPServerConfig): Promise<void> {
     const startTime = performance.now();
-    
+
     this.servers.set(name, {
       name,
       config,
@@ -236,16 +220,16 @@ export class MCPManager extends EventEmitter {
     await withTimeout(
       client.connect(),
       this.connectionConfig.connectTimeout,
-      `Connection to ${name} timed out after ${this.connectionConfig.connectTimeout}ms`
+      `Connection to ${name} timed out after ${this.connectionConfig.connectTimeout}ms`,
     );
 
     // Fetch tools with timeout
     const tools = await withTimeout(
       client.listTools(),
       this.connectionConfig.requestTimeout,
-      `Listing tools from ${name} timed out after ${this.connectionConfig.requestTimeout}ms`
+      `Listing tools from ${name} timed out after ${this.connectionConfig.requestTimeout}ms`,
     );
-    
+
     const catalogTools = normalizeTools(name, tools);
     const connectTime = performance.now() - startTime;
 
@@ -271,9 +255,9 @@ export class MCPManager extends EventEmitter {
    */
   private checkPartialReady(): void {
     this.serversCompleted++;
-    
+
     if (this.initState === "initializing") {
-      const connected = Array.from(this.servers.values()).filter(s => s.status === "connected");
+      const connected = Array.from(this.servers.values()).filter((s) => s.status === "connected");
       if (connected.length === 1 && this.serversCompleted < this.serversPending) {
         // First server ready, emit partial ready event
         this.initState = "partial";
@@ -286,9 +270,9 @@ export class MCPManager extends EventEmitter {
    * Check if at least one server is ready for queries
    */
   isReady(): boolean {
-    return this.initState === "ready" || 
-           this.initState === "partial" || 
-           this.initState === "degraded";
+    return (
+      this.initState === "ready" || this.initState === "partial" || this.initState === "degraded"
+    );
   }
 
   /**
@@ -331,7 +315,7 @@ export class MCPManager extends EventEmitter {
       return Promise.resolve();
     }
 
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const onPartial = () => {
         this.off("init:partial", onPartial);
         this.off("init:complete", onComplete);
@@ -389,7 +373,7 @@ export class MCPManager extends EventEmitter {
     return withTimeout(
       client.callTool(toolName, args),
       this.connectionConfig.requestTimeout,
-      `Tool execution timed out after ${this.connectionConfig.requestTimeout}ms`
+      `Tool execution timed out after ${this.connectionConfig.requestTimeout}ms`,
     );
   }
 
@@ -411,7 +395,7 @@ export class MCPManager extends EventEmitter {
    * Close all connections
    */
   async closeAll(): Promise<void> {
-    const promises = Array.from(this.clients.values()).map(client => client.close());
+    const promises = Array.from(this.clients.values()).map((client) => client.close());
     await Promise.all(promises);
     this.servers.clear();
     this.clients.clear();

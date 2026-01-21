@@ -82,17 +82,17 @@ export class Profiler {
   private marks: Map<string, number> = new Map();
   private measures: Map<string, number[]> = new Map();
   private serverMetrics: Map<string, ServerMetrics> = new Map();
-  
+
   // Initialization tracking
   private initStartTime: number | null = null;
   private initEndTime: number | null = null;
   private initState: "idle" | "initializing" | "partial" | "ready" | "degraded" = "idle";
-  
+
   // Indexing tracking
   private indexBuildTime: number | null = null;
   private toolCount: number = 0;
   private incrementalUpdates: number = 0;
-  
+
   // Start time for uptime calculation
   private readonly startTime: number = performance.now();
 
@@ -114,7 +114,7 @@ export class Profiler {
     }
 
     const duration = performance.now() - start;
-    
+
     // Store measurement
     const existing = this.measures.get(name) || [];
     existing.push(duration);
@@ -161,11 +161,11 @@ export class Profiler {
    * Record server connection metrics
    */
   recordServerConnect(
-    name: string, 
-    connectTime: number, 
+    name: string,
+    connectTime: number,
     toolCount: number,
     status: "connected" | "error",
-    error?: string
+    error?: string,
   ): void {
     this.serverMetrics.set(name, {
       name,

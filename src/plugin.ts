@@ -1,12 +1,12 @@
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import type { Plugin, PluginInput } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
-import { appendFile, mkdir, writeFile, readFile } from "fs/promises";
-import { loadConfig, createDefaultConfigIfMissing } from "./config";
-import type { ConnectionConfig } from "./config";
-import { MCPManager } from "./mcp-client";
-import { BM25Index, searchWithRegex, MAX_REGEX_LENGTH } from "./search";
 import type { CatalogTool, SearchResult } from "./catalog";
+import type { ConnectionConfig } from "./config";
+import { createDefaultConfigIfMissing, loadConfig } from "./config";
+import { MCPManager } from "./mcp-client";
 import { globalProfiler } from "./profiler";
+import { BM25Index, MAX_REGEX_LENGTH, searchWithRegex } from "./search";
 
 /** Package version for schema URL (temporary; will be derived from package.json during build) */
 const PACKAGE_VERSION = "0.10.4";
@@ -36,9 +36,7 @@ Highlight any failed servers or issues.
  * Parse tool name into server and original tool name
  * Format: "serverName_toolName" where serverName may contain underscores
  */
-function parseToolName(
-  fullName: string,
-): { serverName: string; toolName: string } | null {
+function parseToolName(fullName: string): { serverName: string; toolName: string } | null {
   const underscoreIndex = fullName.indexOf("_");
   if (underscoreIndex === -1) {
     return null;
@@ -53,10 +51,7 @@ function parseToolName(
 /**
  * Format search results for LLM consumption
  */
-function formatSearchResults(
-  results: SearchResult[],
-  allTools: CatalogTool[],
-): string {
+function formatSearchResults(results: SearchResult[], allTools: CatalogTool[]): string {
   const toolMap = new Map(allTools.map((t) => [t.idString, t]));
 
   const output = {
@@ -168,19 +163,14 @@ const TEST_PROMPTS: Record<string, Record<string, unknown>> = {
  * Generate minimal arguments from a JSON schema
  * Used as fallback when no predefined test prompt exists
  */
-function generateMinimalArgs(
-  schema: Record<string, unknown>,
-): Record<string, unknown> {
+function generateMinimalArgs(schema: Record<string, unknown>): Record<string, unknown> {
   const args: Record<string, unknown> = {};
 
   if (schema.type !== "object" || !schema.properties) {
     return args;
   }
 
-  const properties = schema.properties as Record<
-    string,
-    Record<string, unknown>
-  >;
+  const properties = schema.properties as Record<string, Record<string, unknown>>;
   const required = (schema.required as string[]) || [];
 
   // Only fill in required properties with minimal values
@@ -253,7 +243,12 @@ function ensureCommandFile() {
     .then((existing) => {
       if (existing !== COMMAND_CONTENT) {
         return writeFile(COMMAND_FILE_PATH, COMMAND_CONTENT).then(() =>
-          log("info", existing ? "Updated /agentsbox-status command file" : "Created /agentsbox-status command file")
+          log(
+            "info",
+            existing
+              ? "Updated /agentsbox-status command file"
+              : "Created /agentsbox-status command file",
+          ),
         );
       }
     })
@@ -332,9 +327,8 @@ function generateSystemPrompt(configuredServers: string[]): string {
  * - agentsbox_status: Get plugin and server status
  * - agentsbox_perf: Get performance metrics
  */
-export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
+export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
   const pluginLoadStart = performance.now();
-  const { client } = ctx;
 
   // Load configuration
   const configPath = process.env.AGENTSBOX_CONFIG || DEFAULT_CONFIG_PATH;
@@ -351,10 +345,12 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
 
   if (!configResult.success) {
     // Format Zod errors with path information for better debugging
-    const formattedErrors = configResult.error.issues.map((issue) => {
-      const path = issue.path.length > 0 ? `at "${issue.path.join(".")}"` : "";
-      return `${issue.message} ${path}`.trim();
-    }).join("; ");
+    const formattedErrors = configResult.error.issues
+      .map((issue) => {
+        const path = issue.path.length > 0 ? `at "${issue.path.join(".")}"` : "";
+        return `${issue.message} ${path}`.trim();
+      })
+      .join("; ");
     const errorMsg = `Failed to load config from ${configPath}: ${formattedErrors}`;
     // Log to file only - don't block
     log("error", errorMsg);
@@ -560,10 +556,7 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
           const duration = timer();
 
           if ("error" in result) {
-            log(
-              "warn",
-              `Regex search failed: "${args.pattern}" -> ${result.error}`,
-            );
+            log("warn", `Regex search failed: "${args.pattern}" -> ${result.error}`);
             return JSON.stringify({
               success: false,
               error: result.error,
@@ -640,14 +633,10 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
               toolArgs = JSON.parse(args.arguments);
             } catch (error) {
               timer();
-              log(
-                "warn",
-                `Failed to parse arguments as JSON for ${args.toolId}`,
-                {
-                  toolId: args.toolId,
-                  arguments: args.arguments,
-                },
-              );
+              log("warn", `Failed to parse arguments as JSON for ${args.toolId}`, {
+                toolId: args.toolId,
+                arguments: args.arguments,
+              });
               return JSON.stringify({
                 success: false,
                 error: `Failed to parse arguments as JSON: ${error instanceof Error ? error.message : String(error)}`,
@@ -659,23 +648,15 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
 
           // Call the underlying MCP server
           try {
-            const result = await mcpManager.callTool(
-              parsed.serverName,
-              parsed.toolName,
-              toolArgs,
-            );
+            const result = await mcpManager.callTool(parsed.serverName, parsed.toolName, toolArgs);
             const duration = timer();
             executionSuccessCount++;
 
-            log(
-              "info",
-              `Tool executed successfully: ${args.toolId} in ${duration.toFixed(2)}ms`,
-              {
-                server: parsed.serverName,
-                tool: parsed.toolName,
-                durationMs: duration,
-              },
-            );
+            log("info", `Tool executed successfully: ${args.toolId} in ${duration.toFixed(2)}ms`, {
+              server: parsed.serverName,
+              tool: parsed.toolName,
+              durationMs: duration,
+            });
 
             return JSON.stringify({
               success: true,
@@ -715,12 +696,15 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
                     type: configuredServer.type,
                     error: null,
                     command:
-                      configuredServer.type === "local" ? configuredServer.command || null : undefined,
+                      configuredServer.type === "local"
+                        ? configuredServer.command || null
+                        : undefined,
                     commandString:
                       configuredServer.type === "local" && configuredServer.command
                         ? configuredServer.command.join(" ")
                         : undefined,
-                    url: configuredServer.type === "remote" ? configuredServer.url || null : undefined,
+                    url:
+                      configuredServer.type === "remote" ? configuredServer.url || null : undefined,
                   }
                 : {
                     name: parsed.serverName,
@@ -762,13 +746,9 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
           }
 
           const servers = mcpManager.getAllServers();
-          const connectedServers = servers.filter(
-            (s) => s.status === "connected",
-          );
+          const connectedServers = servers.filter((s) => s.status === "connected");
           const failedServers = servers.filter((s) => s.status === "error");
-          const connectingServers = servers.filter(
-            (s) => s.status === "connecting",
-          );
+          const connectingServers = servers.filter((s) => s.status === "connecting");
           const totalTools = mcpManager.getAllCatalogTools().length;
           const initDuration = globalProfiler.getInitDuration();
 
@@ -799,8 +779,7 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
                 type: server.config.type,
                 toolCount: server.tools.length,
                 error: server.error || null,
-                command:
-                  server.config.type === "local" ? server.config.command || null : undefined,
+                command: server.config.type === "local" ? server.config.command || null : undefined,
                 commandString:
                   server.config.type === "local" && server.config.command
                     ? server.config.command.join(" ")
@@ -812,8 +791,7 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
             tools: {
               total: totalTools,
               indexed: bm25Index.size,
-              serversWithTools: servers.filter((s) => s.tools.length > 0)
-                .length,
+              serversWithTools: servers.filter((s) => s.tools.length > 0).length,
             },
             agentsboxTools: [
               "agentsbox_search_bm25",
@@ -951,9 +929,7 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
 
             output.push(`[INFO] Server: ${parsed.serverName}`);
             output.push(`[INFO] Tool: ${parsed.toolName}`);
-            output.push(
-              `[INFO] Description: ${catalogTool.description || "(no description)"}`,
-            );
+            output.push(`[INFO] Description: ${catalogTool.description || "(no description)"}`);
             output.push("");
 
             // Determine test arguments
@@ -966,8 +942,7 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
               argsSource = "PREDEFINED";
             } else {
               testArgs = generateMinimalArgs(catalogTool.inputSchema);
-              argsSource =
-                Object.keys(testArgs).length > 0 ? "GENERATED" : "EMPTY";
+              argsSource = Object.keys(testArgs).length > 0 ? "GENERATED" : "EMPTY";
             }
 
             output.push(`[INPUT] Arguments source: ${argsSource}`);
@@ -988,20 +963,14 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
                 setTimeout(() => reject(new Error("TIMEOUT")), timeout);
               });
 
-              const execPromise = mcpManager.callTool(
-                parsed.serverName,
-                parsed.toolName,
-                testArgs,
-              );
+              const execPromise = mcpManager.callTool(parsed.serverName, parsed.toolName, testArgs);
 
               const result = await Promise.race([execPromise, timeoutPromise]);
               const duration = Math.round(performance.now() - toolStart);
 
               output.push(`[OUTPUT] Response received in ${duration}ms:`);
               const resultStr =
-                typeof result === "string"
-                  ? result
-                  : JSON.stringify(result, null, 2);
+                typeof result === "string" ? result : JSON.stringify(result, null, 2);
               output.push(
                 resultStr
                   .split("\n")
@@ -1013,13 +982,10 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
               passed++;
             } catch (error) {
               const duration = Math.round(performance.now() - toolStart);
-              const errorMsg =
-                error instanceof Error ? error.message : String(error);
+              const errorMsg = error instanceof Error ? error.message : String(error);
 
               if (errorMsg === "TIMEOUT") {
-                output.push(
-                  `[OUTPUT] No response - timed out after ${timeout}ms`,
-                );
+                output.push(`[OUTPUT] No response - timed out after ${timeout}ms`);
                 output.push("");
                 output.push(`[TIMEOUT] ✗ Test timed out after ${duration}ms`);
                 timedOut++;
@@ -1039,8 +1005,7 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
           // Final summary
           const totalDuration = Math.round(performance.now() - startTime);
           const total = allTools.length;
-          const successRate =
-            total > 0 ? Math.round((passed / total) * 100) : 0;
+          const successRate = total > 0 ? Math.round((passed / total) * 100) : 0;
 
           output.push("=".repeat(80));
           output.push("TEST SUMMARY");
@@ -1058,17 +1023,13 @@ export const AgentsboxPlugin: Plugin = async (ctx: PluginInput) => {
           output.push("");
           output.push("=".repeat(80));
 
-          log(
-            "info",
-            `Toolbox test completed: ${passed}/${total} passed in ${totalDuration}ms`,
-            {
-              passed,
-              failed,
-              timedOut,
-              skipped,
-              total,
-            },
-          );
+          log("info", `Toolbox test completed: ${passed}/${total} passed in ${totalDuration}ms`, {
+            passed,
+            failed,
+            timedOut,
+            skipped,
+            total,
+          });
 
           return output.join("\n");
         },

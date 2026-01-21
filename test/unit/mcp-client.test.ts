@@ -1,7 +1,7 @@
-import { test, expect, describe } from "bun:test";
-import { FakeMCPClient, FakeTools, FakeToolHandlers } from "../../src/mcp-client/fake";
-import { MCPManager } from "../../src/mcp-client/manager";
+import { describe, expect, test } from "bun:test";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { FakeMCPClient, FakeToolHandlers, FakeTools } from "../../src/mcp-client/fake";
+import { MCPManager } from "../../src/mcp-client/manager";
 
 describe("FakeMCPClient", () => {
   test("can be instantiated and connected", async () => {
@@ -20,7 +20,7 @@ describe("FakeMCPClient", () => {
     await client.connect();
 
     expect(client.isConnected()).toBe(true);
-    
+
     const listedTools = await client.listTools();
     expect(listedTools).toHaveLength(1);
     expect(listedTools[0]?.name).toBe("test_tool");
@@ -54,9 +54,7 @@ describe("FakeMCPClient", () => {
     const client = new FakeMCPClient({ tools: [] });
     await client.connect();
 
-    await expect(
-      client.callTool("nonexistent", {})
-    ).rejects.toThrow("Tool not found: nonexistent");
+    await expect(client.callTool("nonexistent", {})).rejects.toThrow("Tool not found: nonexistent");
   });
 
   test("close() is safe to call multiple times", async () => {
@@ -140,20 +138,20 @@ describe("FakeMCPClient", () => {
 describe("FakeTools presets", () => {
   test("time tools are properly defined", () => {
     expect(FakeTools.time).toHaveLength(2);
-    expect(FakeTools.time.map(t => t.name)).toContain("get_current_time");
-    expect(FakeTools.time.map(t => t.name)).toContain("convert_time");
+    expect(FakeTools.time.map((t) => t.name)).toContain("get_current_time");
+    expect(FakeTools.time.map((t) => t.name)).toContain("convert_time");
   });
 
   test("search tools are properly defined", () => {
     expect(FakeTools.search).toHaveLength(2);
-    expect(FakeTools.search.map(t => t.name)).toContain("web_search");
-    expect(FakeTools.search.map(t => t.name)).toContain("news_search");
+    expect(FakeTools.search.map((t) => t.name)).toContain("web_search");
+    expect(FakeTools.search.map((t) => t.name)).toContain("news_search");
   });
 
   test("calculator tools are properly defined", () => {
     expect(FakeTools.calculator).toHaveLength(2);
-    expect(FakeTools.calculator.map(t => t.name)).toContain("add");
-    expect(FakeTools.calculator.map(t => t.name)).toContain("multiply");
+    expect(FakeTools.calculator.map((t) => t.name)).toContain("add");
+    expect(FakeTools.calculator.map((t) => t.name)).toContain("multiply");
   });
 });
 
@@ -169,11 +167,9 @@ describe("FakeToolHandlers", () => {
   });
 
   test("calculator handler performs calculations", async () => {
-    expect(await FakeToolHandlers.calculator("add", { a: 1, b: 2 }))
-      .toEqual({ result: 3 });
-    
-    expect(await FakeToolHandlers.calculator("multiply", { a: 7, b: 8 }))
-      .toEqual({ result: 56 });
+    expect(await FakeToolHandlers.calculator("add", { a: 1, b: 2 })).toEqual({ result: 3 });
+
+    expect(await FakeToolHandlers.calculator("multiply", { a: 7, b: 8 })).toEqual({ result: 56 });
   });
 
   test("search handler returns mock results", async () => {
@@ -192,7 +188,7 @@ describe("MCPManager - Init States", () => {
     const manager = new MCPManager({
       clientFactory: () => new FakeMCPClient({ tools: FakeTools.time }),
     });
-    
+
     expect(manager.getInitState()).toBe("idle");
     expect(manager.isReady()).toBe(false);
     expect(manager.isComplete()).toBe(false);
@@ -204,11 +200,11 @@ describe("MCPManager - Init States", () => {
     });
 
     await manager.initialize({ time: { type: "local" } });
-    
+
     expect(manager.getInitState()).toBe("ready");
     expect(manager.isReady()).toBe(true);
     expect(manager.isComplete()).toBe(true);
-    
+
     await manager.closeAll();
   });
 

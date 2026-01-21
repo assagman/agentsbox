@@ -71,7 +71,7 @@ async function main() {
           },
         },
       ],
-      { warmup: 20, iterations: 200 }
+      { warmup: 20, iterations: 200 },
     );
   }
 
@@ -115,7 +115,7 @@ async function main() {
         },
       },
     ],
-    { warmup: 10, iterations: 50 }
+    { warmup: 10, iterations: 50 },
   );
 
   // Async indexing benchmark
@@ -145,7 +145,7 @@ async function main() {
         },
       },
     ],
-    { warmup: 5, iterations: 20 }
+    { warmup: 5, iterations: 20 },
   );
 
   console.log("\n✅ Search benchmarks complete!\n");

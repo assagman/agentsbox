@@ -1,12 +1,8 @@
-import { test, expect } from "bun:test";
-import { searchWithRegex, MAX_REGEX_LENGTH } from "../../src/search/regex";
+import { expect, test } from "bun:test";
 import type { CatalogTool } from "../../src/catalog";
+import { MAX_REGEX_LENGTH, searchWithRegex } from "../../src/search/regex";
 
-function createMockTool(
-  server: string,
-  name: string,
-  description: string
-): CatalogTool {
+function createMockTool(server: string, name: string, description: string): CatalogTool {
   return {
     id: { server, name },
     idString: `${server}_${name}`,
@@ -36,7 +32,7 @@ test("regex search finds matching tools", () => {
 test("regex search handles case-insensitive with (?i)", () => {
   const tools = [
     createMockTool("gmail", "send_email", "Send an email message"),
-    createMockTool("outlook", "SEND_MAIL", "Send a mail message"),  // All caps
+    createMockTool("outlook", "SEND_MAIL", "Send a mail message"), // All caps
   ];
 
   const results = searchWithRegex(tools, "(?i)send") as any;
@@ -48,9 +44,7 @@ test("regex search handles case-insensitive with (?i)", () => {
 });
 
 test("regex search with no matches", () => {
-  const tools = [
-    createMockTool("gmail", "send_email", "Send an email"),
-  ];
+  const tools = [createMockTool("gmail", "send_email", "Send an email")];
 
   const results = searchWithRegex(tools, "xyzzy") as any;
 
@@ -128,9 +122,7 @@ test("regex search with pattern matching args", () => {
 });
 
 test("regex search returns proper result structure", () => {
-  const tools = [
-    createMockTool("gmail", "send_email", "Send an email via Gmail"),
-  ];
+  const tools = [createMockTool("gmail", "send_email", "Send an email via Gmail")];
 
   const results = searchWithRegex(tools, "email") as any;
 

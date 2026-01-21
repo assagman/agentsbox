@@ -1,11 +1,21 @@
 #!/usr/bin/env bun
 
-import { mkdir, writeFile, readFile, cp, stat, lstat, readlink, rm, symlink } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
+import {
+  cp,
+  lstat,
+  mkdir,
+  readFile,
+  readlink,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { homedir } from "node:os";
-import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
+import { fileURLToPath } from "node:url";
 
 import { generateDefaultConfig } from "./config/loader";
 
@@ -106,9 +116,7 @@ function table(title: string, rows: Array<[string, string]>): string {
   const rightW = Math.max(...rows.map((r) => r[1].length), 5);
   const line = `+${"-".repeat(leftW + 2)}+${"-".repeat(rightW + 2)}+`;
   const header = `| ${title.padEnd(leftW)} | ${"".padEnd(rightW)} |`;
-  const body = rows
-    .map(([k, v]) => `| ${k.padEnd(leftW)} | ${v.padEnd(rightW)} |`)
-    .join("\n");
+  const body = rows.map(([k, v]) => `| ${k.padEnd(leftW)} | ${v.padEnd(rightW)} |`).join("\n");
   return `${line}\n${header}\n${line}\n${body}\n${line}`;
 }
 
@@ -294,7 +302,11 @@ async function applyPlannedActions(actions: Action[], opts: { dryRun: boolean; f
   printList("Skipped", summary.skipped);
 }
 
-async function planInit(opts: { configDir: string; force: boolean; pkgRoot: string }): Promise<Action[]> {
+async function planInit(opts: {
+  configDir: string;
+  force: boolean;
+  pkgRoot: string;
+}): Promise<Action[]> {
   const { configDir, force, pkgRoot } = opts;
 
   const configPath = join(configDir, "config.jsonc");

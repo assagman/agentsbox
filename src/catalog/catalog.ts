@@ -4,10 +4,7 @@ import type { CatalogTool, ToolId, ToolIdString } from "./types";
 /**
  * Normalize a tool from an MCP server into a CatalogTool
  */
-export function normalizeTool(
-  serverName: string,
-  tool: Tool
-): CatalogTool {
+export function normalizeTool(serverName: string, tool: Tool): CatalogTool {
   const id: ToolId = {
     server: serverName,
     name: tool.name,
@@ -34,9 +31,7 @@ export function normalizeTool(
 /**
  * Extract argument information from JSON schema
  */
-function extractArgs(
-  schema: Tool["inputSchema"]
-): Array<{ name: string; description?: string }> {
+function extractArgs(schema: Tool["inputSchema"]): Array<{ name: string; description?: string }> {
   const args: Array<{ name: string; description?: string }> = [];
 
   if (
@@ -68,13 +63,13 @@ function extractArgs(
 function buildSearchableText(
   serverName: string,
   tool: Tool,
-  args: Array<{ name: string; description?: string }>
+  args: Array<{ name: string; description?: string }>,
 ): string {
   const parts: string[] = [];
 
   // Add qualified name (server_toolname) for regex matching
   parts.push(`${serverName}_${tool.name}`);
-  
+
   // Add original tool name
   parts.push(tool.name);
 
@@ -97,9 +92,6 @@ function buildSearchableText(
 /**
  * Normalize multiple tools from a server
  */
-export function normalizeTools(
-  serverName: string,
-  tools: Tool[]
-): CatalogTool[] {
-  return tools.map(tool => normalizeTool(serverName, tool));
+export function normalizeTools(serverName: string, tools: Tool[]): CatalogTool[] {
+  return tools.map((tool) => normalizeTool(serverName, tool));
 }

@@ -3,27 +3,49 @@
  * Provides test data generators and measurement helpers
  */
 
-import type { CatalogTool, ToolIdString, ToolId } from "../src/catalog/types";
+import type { CatalogTool, ToolId, ToolIdString } from "../src/catalog/types";
 
 /**
  * Generate mock catalog tools for benchmarking
  */
 export function generateMockTools(count: number): CatalogTool[] {
   const tools: CatalogTool[] = [];
-  
+
   const servers = ["time", "search", "calculator", "storage", "api", "data", "analytics"];
-  const verbs = ["get", "set", "create", "delete", "update", "list", "find", "search", "compute", "analyze"];
-  const nouns = ["user", "item", "data", "config", "result", "status", "report", "metric", "event", "log"];
-  
+  const verbs = [
+    "get",
+    "set",
+    "create",
+    "delete",
+    "update",
+    "list",
+    "find",
+    "search",
+    "compute",
+    "analyze",
+  ];
+  const nouns = [
+    "user",
+    "item",
+    "data",
+    "config",
+    "result",
+    "status",
+    "report",
+    "metric",
+    "event",
+    "log",
+  ];
+
   for (let i = 0; i < count; i++) {
     const server = servers[i % servers.length]!;
     const verb = verbs[Math.floor(i / servers.length) % verbs.length]!;
     const noun = nouns[Math.floor(i / (servers.length * verbs.length)) % nouns.length]!;
     const name = `${verb}_${noun}_${i}`;
-    
+
     const id: ToolId = { server, name };
     const idString = `${server}_${name}` as ToolIdString;
-    
+
     tools.push({
       id,
       idString,
@@ -43,7 +65,7 @@ export function generateMockTools(count: number): CatalogTool[] {
       ],
     });
   }
-  
+
   return tools;
 }
 
@@ -69,30 +91,30 @@ export interface BenchmarkResult {
 export async function benchmark(
   name: string,
   fn: () => void | Promise<void>,
-  options: { warmup?: number; iterations?: number } = {}
+  options: { warmup?: number; iterations?: number } = {},
 ): Promise<BenchmarkResult> {
   const warmup = options.warmup ?? 10;
   const iterations = options.iterations ?? 100;
-  
+
   // Warmup runs
   for (let i = 0; i < warmup; i++) {
     await fn();
   }
-  
+
   // Timed runs
   const times: number[] = [];
-  
+
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
     await fn();
     const end = performance.now();
     times.push(end - start);
   }
-  
+
   // Calculate statistics
   times.sort((a, b) => a - b);
   const total = times.reduce((sum, t) => sum + t, 0);
-  
+
   return {
     name,
     iterations,
@@ -141,7 +163,7 @@ export function printHeader(): void {
     "P99".padStart(12),
     "Throughput".padStart(14),
   ].join(" | ");
-  
+
   console.log("\n" + "=".repeat(header.length));
   console.log(header);
   console.log("=".repeat(header.length));
@@ -152,19 +174,19 @@ export function printHeader(): void {
  */
 export async function runBenchmarks(
   benchmarks: Array<{ name: string; fn: () => void | Promise<void> }>,
-  options?: { warmup?: number; iterations?: number }
+  options?: { warmup?: number; iterations?: number },
 ): Promise<BenchmarkResult[]> {
   printHeader();
-  
+
   const results: BenchmarkResult[] = [];
-  
+
   for (const { name, fn } of benchmarks) {
     const result = await benchmark(name, fn, options);
     results.push(result);
     console.log(formatResult(result));
   }
-  
+
   console.log("=".repeat(106) + "\n");
-  
+
   return results;
 }

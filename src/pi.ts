@@ -1,20 +1,19 @@
 // pi integration entrypoint (explicit)
 // Consumers should import: `agentsbox/pi`
 
+import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, truncateHead } from "@mariozechner/pi-coding-agent";
 import { Type } from "@sinclair/typebox";
 
-import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, truncateHead } from "@mariozechner/pi-coding-agent";
-
 import {
-  createAgentsboxRuntime,
-  getDefaultAgentsboxConfigPath,
   BM25_DESC,
-  REGEX_DESC,
+  createAgentsboxRuntime,
   EXECUTE_DESC,
-  STATUS_DESC,
-  PERF_DESC,
-  TEST_DESC,
+  getDefaultAgentsboxConfigPath,
   MAX_REGEX_LENGTH,
+  PERF_DESC,
+  REGEX_DESC,
+  STATUS_DESC,
+  TEST_DESC,
 } from "./runtime";
 
 type PiExtensionAPI = {
@@ -48,16 +47,16 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
   let runtimePromise: ReturnType<typeof createAgentsboxRuntime> | null = null;
 
   async function getRuntime() {
-    const p = runtimePromise
-      ? runtimePromise
-      : (runtimePromise = createAgentsboxRuntime({
-          packageVersion: "0.10.4",
-          configPath: process.env.AGENTSBOX_CONFIG || getDefaultAgentsboxConfigPath(),
-          // In pi, we want normal side effects (auto-create config) unless in tests.
-          isTestEnv: process.env.NODE_ENV === "test" || !!process.env.BUN_TEST,
-        }));
+    if (!runtimePromise) {
+      runtimePromise = createAgentsboxRuntime({
+        packageVersion: "0.10.4",
+        configPath: process.env.AGENTSBOX_CONFIG || getDefaultAgentsboxConfigPath(),
+        // In pi, we want normal side effects (auto-create config) unless in tests.
+        isTestEnv: process.env.NODE_ENV === "test" || !!process.env.BUN_TEST,
+      });
+    }
 
-    const r = await p;
+    const r = await runtimePromise;
     if (!r.success) {
       // Allow retry if config was temporarily invalid.
       runtimePromise = null;
@@ -87,7 +86,8 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
     }),
     async execute(_toolCallId: string, params: { text: string; limit?: number }) {
       const r = await getRuntime();
-      if (!r.success) return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
+      if (!r.success)
+        return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
       const out = await r.runtime.searchBm25(params);
       return toToolResult(out);
     },
@@ -109,7 +109,8 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
     }),
     async execute(_toolCallId: string, params: { pattern: string; limit?: number }) {
       const r = await getRuntime();
-      if (!r.success) return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
+      if (!r.success)
+        return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
       const out = await r.runtime.searchRegex(params);
       return toToolResult(out);
     },
@@ -133,7 +134,8 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
     }),
     async execute(_toolCallId: string, params: { toolId: string; arguments?: string }) {
       const r = await getRuntime();
-      if (!r.success) return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
+      if (!r.success)
+        return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
       const out = await r.runtime.execute(params);
       return toToolResult(out);
     },
@@ -146,7 +148,8 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
     parameters: Type.Object({}),
     async execute(_toolCallId: string) {
       const r = await getRuntime();
-      if (!r.success) return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
+      if (!r.success)
+        return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
       const out = await r.runtime.status();
       return toToolResult(out);
     },
@@ -159,7 +162,8 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
     parameters: Type.Object({}),
     async execute(_toolCallId: string) {
       const r = await getRuntime();
-      if (!r.success) return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
+      if (!r.success)
+        return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
       const out = await r.runtime.perf();
       return toToolResult(out);
     },
@@ -170,11 +174,14 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
     label: "agentsbox_test",
     description: TEST_DESC,
     parameters: Type.Object({
-      timeout: Type.Optional(Type.Number({ description: "Timeout per tool in ms (default: 10000)" })),
+      timeout: Type.Optional(
+        Type.Number({ description: "Timeout per tool in ms (default: 10000)" }),
+      ),
     }),
     async execute(_toolCallId: string, params: { timeout?: number }) {
       const r = await getRuntime();
-      if (!r.success) return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
+      if (!r.success)
+        return toToolResult(r.errorMessage, { isError: true, details: { error: r.errorMessage } });
       const out = await r.runtime.test(params);
       return toToolResult(out);
     },
@@ -194,7 +201,11 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
       }
       const out = await r.runtime.status();
       if (pi.sendMessage) {
-        pi.sendMessage({ customType: "agentsbox", content: truncatePiText(out).content, display: true });
+        pi.sendMessage({
+          customType: "agentsbox",
+          content: truncatePiText(out).content,
+          display: true,
+        });
       } else {
         ctx?.ui?.notify?.("agentsbox status ready", "info");
       }
@@ -218,7 +229,11 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
 
       const out = await r.runtime.searchBm25({ text: query, limit: 10 });
       if (pi.sendMessage) {
-        pi.sendMessage({ customType: "agentsbox", content: truncatePiText(out).content, display: true });
+        pi.sendMessage({
+          customType: "agentsbox",
+          content: truncatePiText(out).content,
+          display: true,
+        });
       } else {
         ctx?.ui?.notify?.("agentsbox search ready", "info");
       }
@@ -246,7 +261,11 @@ export default function agentsboxPiExtension(pi: PiExtensionAPI) {
       ].join("\n");
 
       if (pi.sendMessage) {
-        pi.sendMessage({ customType: "agentsbox", content: truncatePiText(text).content, display: true });
+        pi.sendMessage({
+          customType: "agentsbox",
+          content: truncatePiText(text).content,
+          display: true,
+        });
       } else {
         ctx?.ui?.notify?.("agentsbox help ready", "info");
       }

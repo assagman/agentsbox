@@ -1,13 +1,12 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-
-import { loadConfig, createDefaultConfigIfMissing } from "./config";
-import type { ConnectionConfig, Config } from "./config";
-import type { MCPClientFactory } from "./mcp-client/manager";
-import { MCPManager } from "./mcp-client";
-import { BM25Index, searchWithRegex, MAX_REGEX_LENGTH } from "./search";
 import type { CatalogTool, SearchResult } from "./catalog";
+import type { Config, ConnectionConfig } from "./config";
+import { createDefaultConfigIfMissing, loadConfig } from "./config";
+import { MCPManager } from "./mcp-client";
+import type { MCPClientFactory } from "./mcp-client/manager";
 import { globalProfiler } from "./profiler";
+import { BM25Index, MAX_REGEX_LENGTH, searchWithRegex } from "./search";
 
 /**
  * Tool descriptions - short, directive style
@@ -176,7 +175,8 @@ export function formatSearchResults(results: SearchResult[], allTools: CatalogTo
         schema: catalogTool?.inputSchema || null,
       };
     }),
-    usage: "Use agentsbox_execute({ toolId: '<toolId>', arguments: '<json>' }) to run a discovered tool",
+    usage:
+      "Use agentsbox_execute({ toolId: '<toolId>', arguments: '<json>' }) to run a discovered tool",
   };
 
   return JSON.stringify(output, null, 2);
@@ -285,7 +285,9 @@ export function generateSystemPrompt(configuredServers: string[]): string {
 </MCPTools>`;
 }
 
-export async function createAgentsboxRuntime(opts: AgentsboxRuntimeOptions): Promise<CreateRuntimeResult> {
+export async function createAgentsboxRuntime(
+  opts: AgentsboxRuntimeOptions,
+): Promise<CreateRuntimeResult> {
   const isTestEnv = opts.isTestEnv ?? (process.env.NODE_ENV === "test" || !!process.env.BUN_TEST);
 
   const configPath =
@@ -498,7 +500,8 @@ export async function createAgentsboxRuntime(opts: AgentsboxRuntimeOptions): Pro
               status: "unknown",
               type: configuredServer.type,
               error: null,
-              command: configuredServer.type === "local" ? configuredServer.command || null : undefined,
+              command:
+                configuredServer.type === "local" ? configuredServer.command || null : undefined,
               commandString:
                 configuredServer.type === "local" && configuredServer.command
                   ? configuredServer.command.join(" ")
@@ -635,7 +638,9 @@ export async function createAgentsboxRuntime(opts: AgentsboxRuntimeOptions): Pro
     try {
       await ensureInitialized();
     } catch (error) {
-      output.push(`[FATAL] Failed to initialize: ${error instanceof Error ? error.message : String(error)}`);
+      output.push(
+        `[FATAL] Failed to initialize: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return output.join("\n");
     }
 

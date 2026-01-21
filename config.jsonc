@@ -4,7 +4,7 @@
     "time": {
       "type": "local",
       // "command": ["podman", "run", "-i", "--rm", "time-mcp:latest"],
-      "command": ["uvx", "mcp-server-time"],
+      "command": ["uvx", "mcp-server-time"]
     },
     // ~~~~~~~~~~~~~~~~~~~~~~
     // WEB SEARCH
@@ -20,13 +20,7 @@
       //   "BRAVE_API_KEY",
       //   "docker.io/mcp/brave-search",
       // ],
-      "command": [
-        "bunx",
-        "-y",
-        "@brave/brave-search-mcp-server@2.0.63",
-        "--transport",
-        "stdio",
-      ],
+      "command": ["bunx", "-y", "@brave/brave-search-mcp-server@2.0.63", "--transport", "stdio"]
       // "environment": {
       //   "BRAVE_API_KEY": "{env:BRAVE_API_KEY}",
       // },
@@ -50,8 +44,8 @@
       //   "https://mcp.tavily.com/mcp/"
       // },
       "headers": {
-        "Authorization": "Bearer {env:TAVILY_API_KEY}",
-      },
+        "Authorization": "Bearer {env:TAVILY_API_KEY}"
+      }
     },
     "perplexity": {
       "type": "local",
@@ -64,7 +58,7 @@
       //   "PERPLEXITY_API_KEY",
       //   "perplexity-mcp:latest",
       // ],
-      "command": ["bunx", "@perplexity-ai/mcp-server@0.5.2"],
+      "command": ["bunx", "@perplexity-ai/mcp-server@0.5.2"]
     },
     // ~~~~~~~~~~~~~~~~~~~~~~
     // Z-AI
@@ -74,29 +68,29 @@
       "command": ["bunx", "-y", "@z_ai/mcp-server@0.1.2"],
       "environment": {
         // "Z_AI_API_KEY": "{env:Z_AI_API_KEY}",
-        "Z_AI_MODE": "ZAI",
-      },
+        "Z_AI_MODE": "ZAI"
+      }
     },
     "zai-web-search-prime": {
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/web_search_prime/mcp",
       "headers": {
-        "Authorization": "Bearer {env:Z_AI_API_KEY}",
-      },
+        "Authorization": "Bearer {env:Z_AI_API_KEY}"
+      }
     },
     "zai-web-reader": {
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/web_reader/mcp",
       "headers": {
-        "Authorization": "Bearer {env:Z_AI_API_KEY}",
-      },
+        "Authorization": "Bearer {env:Z_AI_API_KEY}"
+      }
     },
     "zai-zread": {
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/zread/mcp",
       "headers": {
-        "Authorization": "Bearer {env:Z_AI_API_KEY}",
-      },
+        "Authorization": "Bearer {env:Z_AI_API_KEY}"
+      }
     },
     // ~~~~~~~~~~~~~~~~~~~~~~
     // Library-Package
@@ -105,8 +99,8 @@
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
       "headers": {
-        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}",
-      },
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+      }
       // "type": "local",
       // "command": [
       //   "podman",
@@ -120,7 +114,7 @@
     },
     "octocode": {
       "type": "local",
-      "command": ["bunx", "octocode-mcp@latest"],
+      "command": ["bunx", "octocode-mcp@latest"]
       // "type": "local",
       // "command": [
       //   "podman",
@@ -141,8 +135,8 @@
         "uvx",
         "--from",
         "git+https://github.com/ast-grep/ast-grep-mcp",
-        "ast-grep-server",
-      ],
+        "ast-grep-server"
+      ]
     },
     // ~~~~~~~~~~~~~~~~~~~~~~
     // Cloud Services
@@ -156,22 +150,22 @@
     // ~~~~~~~~~~~~~~~~~~~~~~
     "semgrep": {
       "type": "local",
-      "command": ["semgrep", "mcp"],
+      "command": ["semgrep", "mcp"]
     },
     // ============================================================================
     // BROWSER/UI AUTOMATION (Playwright Priority)
     // ============================================================================
     "playwright": {
       "type": "local",
-      "command": ["bunx", "-y", "@playwright/mcp@0.0.55"],
+      "command": ["bunx", "-y", "@playwright/mcp@0.0.55"]
     },
     "chrome-devtools": {
       "type": "local",
-      "command": ["bunx", "-y", "chrome-devtools-mcp@0.12.1"],
+      "command": ["bunx", "-y", "chrome-devtools-mcp@0.12.1"]
     },
     "browserbase": {
       "type": "local",
-      "command": ["bunx", "-y", "@browserbasehq/mcp-server-browserbase@2.4.1"],
+      "command": ["bunx", "-y", "@browserbasehq/mcp-server-browserbase@2.4.1"]
       // "env": {
       //   "BROWSERBASE_API_KEY": "",
       //   "BROWSERBASE_PROJECT_ID": "",
@@ -182,8 +176,8 @@
       "type": "local",
       "command": ["bunx", "-y", "xcodebuildmcp@1.15.1"],
       "environment": {
-        "XCODEBUILDMCP_SENTRY_DISABLED": "false",
-      },
+        "XCODEBUILDMCP_SENTRY_DISABLED": "false"
+      }
     },
     // --
     "redis": {
@@ -194,18 +188,14 @@
         "redis-mcp-server@latest",
         "redis-mcp-server",
         "--url",
-        "redis://localhost:6379/0",
-      ],
+        "redis://localhost:6379/0"
+      ]
     },
     // thinking / reasonung / planning
     "sequential-thinking": {
       "type": "local",
-      "command": [
-        "bunx",
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking",
-      ],
-    },
+      "command": ["bunx", "-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
   },
   "settings": {
     "defaultLimit": 5,
@@ -214,7 +204,7 @@
       "connectTimeout": 5000,
       "requestTimeout": 30000,
       "retryAttempts": 2,
-      "retryDelay": 1000,
-    },
-  },
+      "retryDelay": 1000
+    }
+  }
 }

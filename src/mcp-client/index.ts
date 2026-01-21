@@ -1,5 +1,11 @@
-export * from "./types";
 export * from "./fake";
 export * from "./local";
+export {
+  type InitState,
+  type MCPClientFactory,
+  MCPManager,
+  type MCPManagerEvents,
+  type MCPManagerOptions,
+} from "./manager";
 export * from "./remote";
-export { MCPManager, type MCPClientFactory, type MCPManagerOptions, type InitState, type MCPManagerEvents } from "./manager";
+export * from "./types";

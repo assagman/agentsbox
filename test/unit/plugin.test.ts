@@ -1,12 +1,12 @@
-import { test, expect, describe, beforeEach, mock } from "bun:test";
-import { AgentsboxPlugin } from "../../src/plugin";
+import { beforeEach, describe, expect, test } from "bun:test";
 import type { PluginInput } from "@opencode-ai/plugin";
+import { AgentsboxPlugin } from "../../src/plugin";
 
 // Mock plugin input
 const createMockPluginInput = (): PluginInput => ({
   client: {
     app: {
-      log: async (logData: any) => {
+      log: async (_logData: any) => {
         // Mock logging - do nothing in tests
       },
     },
@@ -26,22 +26,25 @@ describe("AgentsboxPlugin", () => {
   test("returns hooks object when config is missing", async () => {
     // Set config path to non-existent file
     process.env.AGENTSBOX_CONFIG = "/non/existent/config.jsonc";
-    
+
     const hooks = await AgentsboxPlugin(createMockPluginInput());
-    
+
     // Should return empty hooks when config fails
     expect(hooks).toBeDefined();
-    
+
     delete process.env.AGENTSBOX_CONFIG;
   });
 
   test("returns all four tools when config is valid", async () => {
     // Create a temp config file
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -62,10 +65,13 @@ describe("agentsbox_search_bm25 schema", () => {
 
   beforeEach(async () => {
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -92,10 +98,13 @@ describe("agentsbox_search_regex schema", () => {
 
   beforeEach(async () => {
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -122,10 +131,13 @@ describe("agentsbox_execute schema", () => {
 
   beforeEach(async () => {
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -152,10 +164,13 @@ describe("agentsbox_search_bm25 execute", () => {
 
   beforeEach(async () => {
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -166,7 +181,7 @@ describe("agentsbox_search_bm25 execute", () => {
   test("search with text returns results (empty catalog)", async () => {
     const result = await bm25Tool.execute({ text: "time" }, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.count).toBe(0);
     expect(parsed.tools).toEqual([]);
   });
@@ -174,7 +189,7 @@ describe("agentsbox_search_bm25 execute", () => {
   test("search returns usage hint for agentsbox_execute with toolId", async () => {
     const result = await bm25Tool.execute({ text: "time" }, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.usage).toContain("agentsbox_execute");
     expect(parsed.usage).toContain("toolId");
   });
@@ -185,10 +200,13 @@ describe("agentsbox_search_regex execute", () => {
 
   beforeEach(async () => {
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -199,7 +217,7 @@ describe("agentsbox_search_regex execute", () => {
   test("search with pattern returns results (empty catalog)", async () => {
     const result = await regexTool.execute({ pattern: "time.*" }, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.count).toBe(0);
     expect(parsed.tools).toEqual([]);
   });
@@ -207,7 +225,7 @@ describe("agentsbox_search_regex execute", () => {
   test("search with invalid regex returns error", async () => {
     const result = await regexTool.execute({ pattern: "[invalid" }, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.success).toBe(false);
     expect(parsed.error).toBeDefined();
     expect(parsed.error.code).toBe("invalid_pattern");
@@ -219,10 +237,13 @@ describe("agentsbox_execute execute", () => {
 
   beforeEach(async () => {
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -231,33 +252,42 @@ describe("agentsbox_execute execute", () => {
   });
 
   test("execute with invalid toolId format returns error", async () => {
-    const result = await executeTool.execute({ 
-      toolId: "invalidtoolid"  // No underscore
-    }, {} as any);
+    const result = await executeTool.execute(
+      {
+        toolId: "invalidtoolid", // No underscore
+      },
+      {} as any,
+    );
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.success).toBe(false);
     expect(parsed.error).toContain("Invalid toolId format");
   });
 
   test("execute with invalid JSON arguments returns error", async () => {
-    const result = await executeTool.execute({ 
-      toolId: "server_tool",
-      arguments: "not valid json"
-    }, {} as any);
+    const result = await executeTool.execute(
+      {
+        toolId: "server_tool",
+        arguments: "not valid json",
+      },
+      {} as any,
+    );
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.success).toBe(false);
     expect(parsed.error).toContain("JSON");
   });
 
   test("execute with non-existent server returns error", async () => {
-    const result = await executeTool.execute({ 
-      toolId: "nonexistent_tool",
-      arguments: "{}"
-    }, {} as any);
+    const result = await executeTool.execute(
+      {
+        toolId: "nonexistent_tool",
+        arguments: "{}",
+      },
+      {} as any,
+    );
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.success).toBe(false);
     expect(parsed.error).toContain("not found");
   });
@@ -268,10 +298,13 @@ describe("agentsbox_status schema", () => {
 
   beforeEach(async () => {
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -294,10 +327,13 @@ describe("agentsbox_status execute", () => {
 
   beforeEach(async () => {
     const configPath = "/tmp/agentsbox-test-config.jsonc";
-    await Bun.write(configPath, JSON.stringify({
-      mcp: {},
-      settings: { defaultLimit: 5 }
-    }));
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        mcp: {},
+        settings: { defaultLimit: 5 },
+      }),
+    );
 
     process.env.AGENTSBOX_CONFIG = configPath;
 
@@ -308,7 +344,7 @@ describe("agentsbox_status execute", () => {
   test("returns status object with plugin section", async () => {
     const result = await statusTool.execute({}, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.plugin).toBeDefined();
     expect(parsed.plugin.initialized).toBe(true);
     expect(parsed.plugin.configPath).toBeDefined();
@@ -320,7 +356,7 @@ describe("agentsbox_status execute", () => {
   test("returns status object with servers section", async () => {
     const result = await statusTool.execute({}, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.servers).toBeDefined();
     expect(typeof parsed.servers.total).toBe("number");
     expect(typeof parsed.servers.connected).toBe("number");
@@ -332,7 +368,7 @@ describe("agentsbox_status execute", () => {
   test("returns status object with tools section", async () => {
     const result = await statusTool.execute({}, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.tools).toBeDefined();
     expect(typeof parsed.tools.total).toBe("number");
     expect(typeof parsed.tools.indexed).toBe("number");
@@ -341,7 +377,7 @@ describe("agentsbox_status execute", () => {
   test("returns status object with health section", async () => {
     const result = await statusTool.execute({}, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.health).toBeDefined();
     expect(parsed.health.status).toBeDefined();
     expect(parsed.health.message).toBeDefined();
@@ -350,7 +386,7 @@ describe("agentsbox_status execute", () => {
   test("shows healthy status when no servers configured", async () => {
     const result = await statusTool.execute({}, {} as any);
     const parsed = JSON.parse(result);
-    
+
     // With no servers, status should be "unknown"
     expect(parsed.health.status).toBe("unknown");
     expect(parsed.health.message).toBe("No servers configured");
@@ -359,7 +395,7 @@ describe("agentsbox_status execute", () => {
   test("shows correct connection ratio format", async () => {
     const result = await statusTool.execute({}, {} as any);
     const parsed = JSON.parse(result);
-    
+
     // With 0 servers, ratio should be "0/0"
     expect(parsed.servers.connectionRatio).toBe("0/0");
   });
@@ -367,7 +403,7 @@ describe("agentsbox_status execute", () => {
   test("tracks metrics starting at zero", async () => {
     const result = await statusTool.execute({}, {} as any);
     const parsed = JSON.parse(result);
-    
+
     expect(parsed.plugin.searches).toBe(0);
     expect(parsed.plugin.executions).toBe(0);
     expect(parsed.plugin.successRate).toBe("N/A");

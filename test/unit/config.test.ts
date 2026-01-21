@@ -1,7 +1,11 @@
-import { test, expect } from "bun:test";
-import { parseConfig, getSchemaUrl, generateDefaultConfig, createDefaultConfigIfMissing } from "../../src/config";
-import type { Config } from "../../src/config";
-import { unlink } from "fs/promises";
+import { expect, test } from "bun:test";
+import { unlink } from "node:fs/promises";
+import {
+  createDefaultConfigIfMissing,
+  generateDefaultConfig,
+  getSchemaUrl,
+  parseConfig,
+} from "../../src/config";
 
 test("valid config loads correctly", () => {
   const jsonc = `{
@@ -246,42 +250,46 @@ test("generateDefaultConfig output is valid JSONC", () => {
 
 test("createDefaultConfigIfMissing creates file when missing", async () => {
   const testPath = "/tmp/toolbox-create-test-" + Date.now() + ".jsonc";
-  
+
   try {
     const created = await createDefaultConfigIfMissing(testPath, "0.8.0");
     expect(created).toBe(true);
-    
+
     // Verify file was created
     const file = Bun.file(testPath);
     expect(await file.exists()).toBe(true);
-    
+
     // Verify content is valid
     const content = await file.text();
     const result = parseConfig(content);
     expect(result.success).toBe(true);
   } finally {
     // Cleanup
-    try { await unlink(testPath); } catch {}
+    try {
+      await unlink(testPath);
+    } catch {}
   }
 });
 
 test("createDefaultConfigIfMissing does not overwrite existing file", async () => {
   const testPath = "/tmp/toolbox-existing-test-" + Date.now() + ".jsonc";
   const existingContent = '{"mcp": {}, "settings": {"defaultLimit": 10}}';
-  
+
   try {
     // Create file first
     await Bun.write(testPath, existingContent);
-    
+
     const created = await createDefaultConfigIfMissing(testPath, "0.8.0");
     expect(created).toBe(false);
-    
+
     // Verify content was not changed
     const content = await Bun.file(testPath).text();
     expect(content).toBe(existingContent);
   } finally {
     // Cleanup
-    try { await unlink(testPath); } catch {}
+    try {
+      await unlink(testPath);
+    } catch {}
   }
 });
 
@@ -299,7 +307,7 @@ test("server without type gives helpful error", () => {
   expect(result.success).toBe(false);
 
   if (!result.success) {
-    const errorMessages = result.error.issues.map(i => i.message).join("; ");
+    const errorMessages = result.error.issues.map((i) => i.message).join("; ");
     expect(errorMessages).toContain("type");
   }
 });
@@ -318,7 +326,7 @@ test("server with invalid type gives helpful error", () => {
   expect(result.success).toBe(false);
 
   if (!result.success) {
-    const errorMessages = result.error.issues.map(i => i.message).join("; ");
+    const errorMessages = result.error.issues.map((i) => i.message).join("; ");
     expect(errorMessages).toContain("type");
   }
 });

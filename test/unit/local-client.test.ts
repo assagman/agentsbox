@@ -1,5 +1,5 @@
-import { test, expect, describe } from "bun:test";
-import { LocalMCPClient, type Transport, type LocalMCPClientOptions } from "../../src/mcp-client/local";
+import { describe, expect, test } from "bun:test";
+import { LocalMCPClient, type Transport } from "../../src/mcp-client/local";
 
 /**
  * Create a mock client factory for testing
@@ -10,14 +10,14 @@ function createMockClientFactory(options?: {
   tools?: any[];
   callToolResult?: any;
 }) {
-  return (name: string) => {
-    let connected = false;
+  return (_name: string) => {
+    let _connected = false;
     return {
-      async connect(transport: Transport): Promise<void> {
+      async connect(_transport: Transport): Promise<void> {
         if (options?.failConnect) {
           throw new Error("Connection failed");
         }
-        connected = true;
+        _connected = true;
       },
       async listTools(): Promise<{ tools: any[] }> {
         if (options?.failListTools) {
@@ -25,7 +25,7 @@ function createMockClientFactory(options?: {
         }
         return { tools: options?.tools ?? [] };
       },
-      async callTool(request: { name: string; arguments: Record<string, unknown> }): Promise<any> {
+      async callTool(_request: { name: string; arguments: Record<string, unknown> }): Promise<any> {
         return options?.callToolResult ?? { content: [{ type: "text", text: "ok" }] };
       },
     };
@@ -35,11 +35,8 @@ function createMockClientFactory(options?: {
 /**
  * Create a mock transport factory for testing
  */
-function createMockTransportFactory(options?: {
-  failClose?: boolean;
-  onClose?: () => void;
-}) {
-  return (opts: {
+function createMockTransportFactory(options?: { failClose?: boolean; onClose?: () => void }) {
+  return (_opts: {
     command: string;
     args: string[];
     env: Record<string, string>;
@@ -72,7 +69,7 @@ describe("LocalMCPClient", () => {
       const mockFactory = createMockClientFactory();
       const client = new LocalMCPClient(
         { name: "test", type: "local", command: ["echo"] },
-        { clientFactory: mockFactory }
+        { clientFactory: mockFactory },
       );
       expect(client).toBeDefined();
     });
@@ -81,7 +78,7 @@ describe("LocalMCPClient", () => {
       const mockTransport = createMockTransportFactory();
       const client = new LocalMCPClient(
         { name: "test", type: "local", command: ["echo"] },
-        { transportFactory: mockTransport }
+        { transportFactory: mockTransport },
       );
       expect(client).toBeDefined();
     });
@@ -91,7 +88,7 @@ describe("LocalMCPClient", () => {
     test("throws when command is empty", async () => {
       const client = new LocalMCPClient(
         { name: "test", type: "local", command: [] },
-        { clientFactory: createMockClientFactory() }
+        { clientFactory: createMockClientFactory() },
       );
 
       await expect(client.connect()).rejects.toThrow("has no command");
@@ -100,7 +97,7 @@ describe("LocalMCPClient", () => {
     test("throws when command is undefined", async () => {
       const client = new LocalMCPClient(
         { name: "test", type: "local" },
-        { clientFactory: createMockClientFactory() }
+        { clientFactory: createMockClientFactory() },
       );
 
       await expect(client.connect()).rejects.toThrow("has no command");
@@ -112,7 +109,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -134,7 +131,7 @@ describe("LocalMCPClient", () => {
             capturedOpts = opts;
             return { close: async () => {} };
           },
-        }
+        },
       );
 
       await client.connect();
@@ -161,7 +158,7 @@ describe("LocalMCPClient", () => {
             capturedEnv = opts.env;
             return { close: async () => {} };
           },
-        }
+        },
       );
 
       await client.connect();
@@ -178,7 +175,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ failConnect: true }),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await expect(client.connect()).rejects.toThrow("Connection failed");
@@ -197,7 +194,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ tools: mockTools }),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -213,7 +210,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ tools: mockTools }),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -229,7 +226,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ failListTools: true }),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -245,7 +242,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ callToolResult: expectedResult }),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -267,7 +264,7 @@ describe("LocalMCPClient", () => {
               transportClosed = true;
             },
           }),
-        }
+        },
       );
 
       await client.connect();
@@ -286,7 +283,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();
@@ -300,7 +297,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.close(); // Should not throw
@@ -314,7 +311,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory(),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       expect(client.getCachedTools()).toBeNull();
@@ -327,7 +324,7 @@ describe("LocalMCPClient", () => {
         {
           clientFactory: createMockClientFactory({ tools: mockTools }),
           transportFactory: createMockTransportFactory(),
-        }
+        },
       );
 
       await client.connect();

@@ -1,8 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { RemoteMCPServerConfig } from "./types";
-import type { MCPClient } from "./types";
+import type { MCPClient, RemoteMCPServerConfig } from "./types";
 
 /**
  * Transport-like interface for DI/testing
@@ -45,10 +44,7 @@ export class RemoteMCPClient implements MCPClient {
   private transportType: "streamable-http" | "sse" | null;
   private options: RemoteMCPClientOptions;
 
-  constructor(
-    config: { name: string } & RemoteMCPServerConfig,
-    options?: RemoteMCPClientOptions
-  ) {
+  constructor(config: { name: string } & RemoteMCPServerConfig, options?: RemoteMCPClientOptions) {
     this.transport = null;
     this.toolsCache = null;
     this.name = config.name;
@@ -68,7 +64,7 @@ export class RemoteMCPClient implements MCPClient {
         name: `agentsbox-client-${this.name}`,
         version: "0.1.0",
       },
-      {}
+      {},
     );
   }
 
@@ -111,7 +107,7 @@ export class RemoteMCPClient implements MCPClient {
       this.transport = streamableTransport;
       this.transportType = "streamable-http";
       return;
-    } catch (error) {
+    } catch (_error) {
       // Clean up only the attempted transport; avoid closing an existing connection.
       if (streamableTransport) {
         await streamableTransport.close().catch(() => {});

@@ -17,7 +17,7 @@ export type RegexSearchError = {
 export function searchWithRegex(
   tools: CatalogTool[],
   pattern: string,
-  limit: number = 5
+  limit: number = 5,
 ): SearchResult[] | { error: RegexSearchError } {
   // Validate pattern length
   if (pattern.length > MAX_REGEX_LENGTH) {
@@ -83,7 +83,7 @@ export function searchWithRegex(
  */
 function generateSignature(tool: CatalogTool): string {
   const argList = tool.args
-    .map(arg => {
+    .map((arg) => {
       // Check if arg is optional by looking for keywords in description
       const desc = arg.description?.toLowerCase() || "";
       const optional = desc.includes("optional") || desc.includes("(optional)");

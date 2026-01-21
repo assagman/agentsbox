@@ -22,13 +22,21 @@
   "scripts": {
     "build": "bun build src/index.ts src/opencode.ts src/pi.ts src/cli.ts --outdir dist --target node",
     "dev": "bun --hot src/opencode.ts",
+    "check": "biome check .",
+    "check:fix": "biome check --write --unsafe .",
+    "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
-    "typecheck": "tsc --noEmit",
     "bench": "bun run bench:search && bun run bench:init && bun run bench:concurrent",
     "bench:search": "bun run bench/search.bench.ts",
     "bench:init": "bun run bench/init.bench.ts",
-    "bench:concurrent": "bun run bench/concurrent.bench.ts"
+    "bench:concurrent": "bun run bench/concurrent.bench.ts",
+    "prepare": "node -e \"const { existsSync } = require('node:fs'); const { execSync } = require('node:child_process'); if (process.env.CI) process.exit(0); if (existsSync('.git')) execSync('husky', { stdio: 'inherit' });\""
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx,json,jsonc}": [
+      "biome check --write --unsafe --files-ignore-unknown true"
+    ]
   },
   "files": [
     "dist",
@@ -48,7 +56,10 @@
     "url": "https://github.com/assagman/agentsbox"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.11",
     "@types/bun": "latest",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {

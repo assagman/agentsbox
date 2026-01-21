@@ -1,2 +1,2 @@
-export { Profiler, globalProfiler } from "./profiler";
-export type { PerformanceStats, PerformanceReport, ServerMetrics } from "./profiler";
+export type { PerformanceReport, PerformanceStats, ServerMetrics } from "./profiler";
+export { globalProfiler, Profiler } from "./profiler";

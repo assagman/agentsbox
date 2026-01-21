@@ -7,22 +7,22 @@ import type { CatalogTool, SearchResult, ToolIdString } from "../catalog/types";
 export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
-    .replace(/[^\w\s]/g, " ")  // Replace punctuation with spaces
+    .replace(/[^\w\s]/g, " ") // Replace punctuation with spaces
     .split(/\s+/)
-    .filter(token => token.length > 0);
+    .filter((token) => token.length > 0);
 }
 
 /**
  * Yield to the event loop - allows other async work to proceed
  */
 function yieldToEventLoop(): Promise<void> {
-  return new Promise(resolve => setImmediate(resolve));
+  return new Promise((resolve) => setImmediate(resolve));
 }
 
 /**
  * BM25 search implementation with incremental indexing support
  * Using standard BM25 parameters: k1=1.2, b=0.75
- * 
+ *
  * Features:
  * - Incremental updates without full reindex
  * - Async chunked indexing for large batches
@@ -30,11 +30,11 @@ function yieldToEventLoop(): Promise<void> {
  */
 export class BM25Index {
   private documents: Map<ToolIdString, { tokens: string[]; tool: CatalogTool }>;
-  private docFreqs: Map<string, number>;  // Document frequency for each term
+  private docFreqs: Map<string, number>; // Document frequency for each term
   private docLengths: Map<ToolIdString, number>;
   private avgDocLength: number = 0;
   private totalDocs: number = 0;
-  private totalTokens: number = 0;  // Track total tokens for incremental avg calculation
+  private totalTokens: number = 0; // Track total tokens for incremental avg calculation
 
   // BM25 parameters
   private readonly k1: number = 1.2;
@@ -58,7 +58,7 @@ export class BM25Index {
   /**
    * Add tools to the index asynchronously with chunked processing
    * Yields to event loop between chunks to prevent blocking
-   * 
+   *
    * @param tools - Tools to index
    * @param chunkSize - Number of tools to process before yielding (default: 50)
    */
@@ -81,7 +81,7 @@ export class BM25Index {
   /**
    * Add multiple tools incrementally with async chunking
    * Use for large batches to prevent blocking
-   * 
+   *
    * @param tools - Tools to add
    * @param chunkSize - Number of tools to process before yielding
    */
@@ -91,7 +91,7 @@ export class BM25Index {
       for (const tool of chunk) {
         this.addToolInternal(tool);
       }
-      
+
       // Yield to event loop if more chunks remain
       if (i + chunkSize < tools.length) {
         await yieldToEventLoop();
@@ -206,7 +206,7 @@ export class BM25Index {
         const idf = Math.log((this.totalDocs - df + 0.5) / (df + 0.5) + 1);
 
         // Term frequency in document
-        const tf = doc.tokens.filter(t => t === token).length;
+        const tf = doc.tokens.filter((t) => t === token).length;
 
         // BM25 score
         const numerator = tf * (this.k1 + 1);
@@ -223,7 +223,7 @@ export class BM25Index {
     const sorted = Array.from(scores.entries())
       .sort(([aId, aScore], [bId, bScore]) => {
         if (Math.abs(aScore - bScore) < 0.0001) {
-          return aId.localeCompare(bId);  // Stable alphabetical sort
+          return aId.localeCompare(bId); // Stable alphabetical sort
         }
         return bScore - aScore;
       })
@@ -238,8 +238,11 @@ export class BM25Index {
   private toSearchResult(tool: CatalogTool, score: number): SearchResult {
     // Generate function signature
     const argList = tool.args
-      .map(arg => {
-        const optional = arg.description?.includes("optional") || arg.description?.includes("(optional)") ? "?" : "";
+      .map((arg) => {
+        const optional =
+          arg.description?.includes("optional") || arg.description?.includes("(optional)")
+            ? "?"
+            : "";
         return `${arg.name}${optional}`;
       })
       .join(", ");

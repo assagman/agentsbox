@@ -3,10 +3,9 @@
  * Tests cold start, server connection, and progressive loading
  */
 
-import { MCPManager, FakeMCPClient, FakeTools } from "../src/mcp-client";
+import { FakeMCPClient, FakeTools, MCPManager } from "../src/mcp-client";
 import { BM25Index } from "../src/search";
-import { Profiler } from "../src/profiler";
-import { generateMockTools, runBenchmarks, benchmark } from "./utils";
+import { runBenchmarks } from "./utils";
 
 async function main() {
   console.log("\n🚀 Initialization Performance Benchmarks\n");
@@ -59,7 +58,7 @@ async function main() {
         },
       },
     ],
-    { warmup: 5, iterations: 50 }
+    { warmup: 5, iterations: 50 },
   );
 
   // Progressive loading benchmark
@@ -74,24 +73,24 @@ async function main() {
             clientFactory: () => new FakeMCPClient({ tools: FakeTools.time }),
           });
           const bm25 = new BM25Index();
-          
+
           // Set up progressive loading
           manager.on("server:connected", (_, tools) => {
             bm25.addToolsBatch(tools);
           });
-          
+
           // Start background init
           manager.initializeBackground({
             time: { type: "local" },
             search: { type: "local" },
           });
-          
+
           // Wait for partial readiness
           await manager.waitForPartial();
-          
+
           // Query immediately
           bm25.search("time", 5);
-          
+
           await manager.closeAll();
         },
       },
@@ -101,21 +100,21 @@ async function main() {
           const manager = new MCPManager({
             clientFactory: () => new FakeMCPClient({ tools: FakeTools.time }),
           });
-          
+
           await manager.initialize({
             time: { type: "local" },
             search: { type: "local" },
           });
-          
+
           const bm25 = new BM25Index();
           bm25.indexTools(manager.getAllCatalogTools());
           bm25.search("time", 5);
-          
+
           await manager.closeAll();
         },
       },
     ],
-    { warmup: 5, iterations: 30 }
+    { warmup: 5, iterations: 30 },
   );
 
   // Measure time to first search
@@ -133,7 +132,7 @@ async function main() {
   for (const result of ttfsResults) {
     console.log(
       `${result.servers} servers: ${result.ttfs.toFixed(2)}ms ` +
-      `(init: ${result.initTime.toFixed(2)}ms, search: ${result.searchTime.toFixed(2)}ms)`
+        `(init: ${result.initTime.toFixed(2)}ms, search: ${result.searchTime.toFixed(2)}ms)`,
     );
   }
   console.log("━".repeat(50));
@@ -166,7 +165,7 @@ async function main() {
               retryDelay: 10, // Fast retry for benchmark
             },
           });
-          
+
           await manager.initialize({ time: { type: "local" } });
           await manager.closeAll();
         },
@@ -175,11 +174,12 @@ async function main() {
         name: "No retry (fail fast)",
         fn: async () => {
           const manager = new MCPManager({
-            clientFactory: () => new FakeMCPClient({
-              tools: [],
-              failConnect: true,
-              errorMessage: "Simulated failure",
-            }),
+            clientFactory: () =>
+              new FakeMCPClient({
+                tools: [],
+                failConnect: true,
+                errorMessage: "Simulated failure",
+              }),
             connectionConfig: {
               connectTimeout: 1000,
               requestTimeout: 5000,
@@ -187,13 +187,13 @@ async function main() {
               retryDelay: 0,
             },
           });
-          
+
           await manager.initialize({ time: { type: "local" } });
           await manager.closeAll();
         },
       },
     ],
-    { warmup: 3, iterations: 20 }
+    { warmup: 3, iterations: 20 },
   );
 
   console.log("\n✅ Initialization benchmarks complete!\n");
@@ -228,8 +228,8 @@ async function measureTimeToFirstSearch(serverCount: number): Promise<{
     // Start background init
     manager.initializeBackground(
       Object.fromEntries(
-        Array.from({ length: serverCount }, (_, i) => [`server${i}`, { type: "local" as const }])
-      )
+        Array.from({ length: serverCount }, (_, i) => [`server${i}`, { type: "local" as const }]),
+      ),
     );
 
     // Wait for partial readiness

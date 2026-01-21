@@ -36,27 +36,27 @@ export class FakeMCPClient implements MCPClient {
 
   private async simulateDelay(): Promise<void> {
     if (this.config.delay && this.config.delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, this.config.delay));
+      await new Promise((resolve) => setTimeout(resolve, this.config.delay));
     }
   }
 
   async connect(): Promise<void> {
     await this.simulateDelay();
-    
+
     if (this.config.failConnect) {
       throw new Error(this.config.errorMessage || "Connection failed");
     }
-    
+
     this.connected = true;
   }
 
   async listTools(): Promise<Tool[]> {
     await this.simulateDelay();
-    
+
     if (this.config.failListTools) {
       throw new Error(this.config.errorMessage || "Failed to list tools");
     }
-    
+
     return [...this.config.tools];
   }
 
@@ -64,7 +64,7 @@ export class FakeMCPClient implements MCPClient {
     await this.simulateDelay();
 
     // Check if tool exists
-    const tool = this.config.tools.find(t => t.name === name);
+    const tool = this.config.tools.find((t) => t.name === name);
     if (!tool) {
       throw new Error(`Tool not found: ${name}`);
     }
@@ -188,7 +188,7 @@ export const FakeTools = {
 export const FakeToolHandlers = {
   time: async (name: string, args: Record<string, unknown>) => {
     if (name === "get_current_time") {
-      const tz = args.timezone as string || "UTC";
+      const tz = (args.timezone as string) || "UTC";
       const now = new Date();
       return {
         datetime: now.toISOString(),
@@ -213,7 +213,7 @@ export const FakeToolHandlers = {
     throw new Error(`Unknown tool: ${name}`);
   },
 
-  search: async (name: string, args: Record<string, unknown>) => {
+  search: async (_name: string, args: Record<string, unknown>) => {
     const query = args.query as string;
     return {
       query,

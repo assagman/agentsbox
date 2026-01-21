@@ -1,2 +1,8 @@
+export {
+  createDefaultConfigIfMissing,
+  generateDefaultConfig,
+  getSchemaUrl,
+  loadConfig,
+  parseConfig,
+} from "./loader";
 export * from "./schema";
-export { parseConfig, loadConfig, getSchemaUrl, generateDefaultConfig, createDefaultConfigIfMissing } from "./loader";

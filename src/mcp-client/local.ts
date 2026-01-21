@@ -1,7 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import type { LocalMCPServerConfig } from "./types";
-import type { MCPClient } from "./types";
+import type { LocalMCPServerConfig, MCPClient } from "./types";
 
 /**
  * Transport-like interface for DI/testing
@@ -45,26 +44,18 @@ export class LocalMCPClient implements MCPClient {
   private config: LocalMCPServerConfig;
   private transportFactory: NonNullable<LocalMCPClientOptions["transportFactory"]>;
 
-  constructor(
-    config: { name: string } & LocalMCPServerConfig,
-    options?: LocalMCPClientOptions
-  ) {
+  constructor(config: { name: string } & LocalMCPServerConfig, options?: LocalMCPClientOptions) {
     this.transport = null;
     this.toolsCache = null;
     this.name = config.name;
     this.config = config;
 
     // Use provided factories or defaults
-    const clientFactory = options?.clientFactory ?? ((name: string) =>
-      new Client(
-        { name: `agentsbox-client-${name}`, version: "0.1.0" },
-        {}
-      )
-    );
+    const clientFactory =
+      options?.clientFactory ??
+      ((name: string) => new Client({ name: `agentsbox-client-${name}`, version: "0.1.0" }, {}));
 
-    this.transportFactory = options?.transportFactory ?? ((opts) =>
-      new StdioClientTransport(opts)
-    );
+    this.transportFactory = options?.transportFactory ?? ((opts) => new StdioClientTransport(opts));
 
     this.client = clientFactory(this.name);
   }

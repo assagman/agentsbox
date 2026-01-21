@@ -3,7 +3,7 @@
  * Tests performance under concurrent search and execution load
  */
 
-import { MCPManager, FakeMCPClient, FakeTools, FakeToolHandlers } from "../src/mcp-client";
+import { FakeMCPClient, FakeToolHandlers, FakeTools, MCPManager } from "../src/mcp-client";
 import { BM25Index, searchWithRegex } from "../src/search";
 import { generateMockTools, runBenchmarks } from "./utils";
 
@@ -62,32 +62,26 @@ async function main() {
         name: "10 concurrent BM25 searches",
         fn: async () => {
           await Promise.all(
-            queries.slice(0, 10).map((q) => 
-              Promise.resolve(bm25Index.search(q, 5))
-            )
+            queries.slice(0, 10).map((q) => Promise.resolve(bm25Index.search(q, 5))),
           );
         },
       },
       {
         name: "50 concurrent BM25 searches",
         fn: async () => {
-          const allQueries = Array(50).fill(null).map((_, i) => queries[i % queries.length]!);
-          await Promise.all(
-            allQueries.map((q) => 
-              Promise.resolve(bm25Index.search(q, 5))
-            )
-          );
+          const allQueries = Array(50)
+            .fill(null)
+            .map((_, i) => queries[i % queries.length]!);
+          await Promise.all(allQueries.map((q) => Promise.resolve(bm25Index.search(q, 5))));
         },
       },
       {
         name: "100 concurrent BM25 searches",
         fn: async () => {
-          const allQueries = Array(100).fill(null).map((_, i) => queries[i % queries.length]!);
-          await Promise.all(
-            allQueries.map((q) => 
-              Promise.resolve(bm25Index.search(q, 5))
-            )
-          );
+          const allQueries = Array(100)
+            .fill(null)
+            .map((_, i) => queries[i % queries.length]!);
+          await Promise.all(allQueries.map((q) => Promise.resolve(bm25Index.search(q, 5))));
         },
       },
       {
@@ -108,7 +102,7 @@ async function main() {
         },
       },
     ],
-    { warmup: 10, iterations: 100 }
+    { warmup: 10, iterations: 100 },
   );
 
   // Concurrent tool execution
@@ -132,9 +126,9 @@ async function main() {
         name: "10 concurrent tool executions",
         fn: async () => {
           await Promise.all(
-            Array(10).fill(null).map((_, i) =>
-              manager.callTool("calculator", "add", { a: i, b: i + 1 })
-            )
+            Array(10)
+              .fill(null)
+              .map((_, i) => manager.callTool("calculator", "add", { a: i, b: i + 1 })),
           );
         },
       },
@@ -142,14 +136,14 @@ async function main() {
         name: "20 concurrent tool executions",
         fn: async () => {
           await Promise.all(
-            Array(20).fill(null).map((_, i) =>
-              manager.callTool("calculator", "add", { a: i, b: i + 1 })
-            )
+            Array(20)
+              .fill(null)
+              .map((_, i) => manager.callTool("calculator", "add", { a: i, b: i + 1 })),
           );
         },
       },
     ],
-    { warmup: 5, iterations: 50 }
+    { warmup: 5, iterations: 50 },
   );
 
   // Mixed workload (search + execute)
@@ -170,10 +164,12 @@ async function main() {
         name: "10 search-execute pairs (concurrent)",
         fn: async () => {
           await Promise.all(
-            Array(10).fill(null).map(async () => {
-              bm25Index.search("calculate", 1);
-              await manager.callTool("calculator", "add", { a: 1, b: 2 });
-            })
+            Array(10)
+              .fill(null)
+              .map(async () => {
+                bm25Index.search("calculate", 1);
+                await manager.callTool("calculator", "add", { a: 1, b: 2 });
+              }),
           );
         },
       },
@@ -181,17 +177,17 @@ async function main() {
         name: "Mixed: 50 searches + 10 executes",
         fn: async () => {
           await Promise.all([
-            ...Array(50).fill(null).map((_, i) =>
-              Promise.resolve(bm25Index.search(queries[i % queries.length]!, 5))
-            ),
-            ...Array(10).fill(null).map((_, i) =>
-              manager.callTool("calculator", "add", { a: i, b: i })
-            ),
+            ...Array(50)
+              .fill(null)
+              .map((_, i) => Promise.resolve(bm25Index.search(queries[i % queries.length]!, 5))),
+            ...Array(10)
+              .fill(null)
+              .map((_, i) => manager.callTool("calculator", "add", { a: i, b: i })),
           ]);
         },
       },
     ],
-    { warmup: 5, iterations: 50 }
+    { warmup: 5, iterations: 50 },
   );
 
   // Memory pressure test
@@ -209,9 +205,7 @@ async function main() {
 
   // Run many concurrent searches
   await Promise.all(
-    indexes.flatMap((idx) =>
-      queries.map((q) => Promise.resolve(idx.search(q, 5)))
-    )
+    indexes.flatMap((idx) => queries.map((q) => Promise.resolve(idx.search(q, 5)))),
   );
 
   const memAfter = process.memoryUsage();

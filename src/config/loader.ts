@@ -1,10 +1,10 @@
 // Use jsonc-parser ESM build to keep bundlers + Node ESM loaders happy.
+
+import { constants } from "node:fs";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { parse } from "jsonc-parser/lib/esm/main.js";
 import { z } from "zod";
-import { constants } from "node:fs";
-import { mkdir, writeFile, readFile, access } from "node:fs/promises";
-import { dirname } from "node:path";
-import type { Config } from "./schema";
 import { ConfigSchema } from "./schema";
 
 /** npm package name for schema URL */
@@ -137,7 +137,9 @@ export function parseConfig(jsonc: string): ReturnType<typeof ConfigSchema.safeP
  * @param filePath - Path to config file
  * @returns Zod validation result
  */
-export async function loadConfig(filePath: string): Promise<ReturnType<typeof ConfigSchema.safeParse>> {
+export async function loadConfig(
+  filePath: string,
+): Promise<ReturnType<typeof ConfigSchema.safeParse>> {
   try {
     const content = await readFile(filePath, "utf-8");
     return parseConfig(content);
