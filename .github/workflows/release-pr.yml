@@ -82,7 +82,7 @@ jobs:
           INPUT_VERSION_TYPE: ${{ inputs.version_type }}
           ANALYZE_BUMP: ${{ steps.analyze.outputs.bump }}
         run: |
-          # NOTE: avoid using ${{ }} inside run to prevent shell injection issues.
+          # NOTE: avoid using GitHub expressions inside run to prevent shell injection issues.
 
           # Use custom version if provided
           if [ -n "$INPUT_CUSTOM_VERSION" ]; then
