@@ -49,7 +49,6 @@ jobs:
 
       - name: Determine version bump from commits
         id: analyze
-        if: inputs.version_type == 'auto' && inputs.custom_version == ''
         run: |
           # Get commits since last tag
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
