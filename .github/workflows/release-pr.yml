@@ -1,5 +1,6 @@
 name: Create Release PR
 
+# Trigger: Manual only
 on:
   workflow_dispatch:
     inputs:
