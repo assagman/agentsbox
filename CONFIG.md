@@ -33,7 +33,7 @@ The generated config references a **local** schema file:
 }
 ```
 
-This avoids relying on npm/unpkg while the project is not published.
+This keeps the config self-contained and avoids relying on hosted schemas (npm/unpkg).
 
 ## MCP servers
 

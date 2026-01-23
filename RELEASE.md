@@ -1,9 +1,33 @@
-# Release process (WIP)
+# Release process
 
-This repository is **not published yet** (package.json is `private: true`).
+Releases are automated via GitHub Actions.
 
-When publishing is desired:
+## 1) Create a release PR
 
-1. Remove `"private": true` from `package.json`.
-2. Decide on the publish target (npm scope/name) and update docs/schema IDs accordingly.
-3. Add an actual release workflow (tags, changelog generation, publish automation).
+Trigger the workflow **Create Release PR** (`.github/workflows/release-pr.yml`) via `workflow_dispatch`.
+
+It will:
+- create a branch `release-vX.Y.Z`
+- bump `package.json` version
+- prepend a changelog entry to `CHANGELOG.md`
+- open a PR labeled `release`
+
+## 2) Merge the release PR
+
+When the PR is merged into `main`, the **Publish Release** workflow (`.github/workflows/release-publish.yml`) runs (only for merged PRs with label `release`).
+
+It will:
+- install deps + build + run tests
+- create and push a git tag `vX.Y.Z`
+- create a GitHub Release
+- publish to npm using OIDC trusted publishing (`npm publish --provenance --access public`)
+
+## Local verification (recommended)
+
+```bash
+bun install
+bun run check
+bun run typecheck
+bun test
+bun run build
+```

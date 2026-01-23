@@ -6,7 +6,7 @@ This repository is the generic, standalone form of the former `opencode-toolbox`
 
 ## Status
 
-This repository is **not published to npm yet** (package.json is `private: true`).
+Initial public release is **v0.1.0** (published via the release workflow after the release PR is merged).
 
 ## What it does
 
