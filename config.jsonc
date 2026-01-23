@@ -114,7 +114,7 @@
     },
     "octocode": {
       "type": "local",
-      "command": ["bunx", "octocode-mcp@latest"]
+      "command": ["bunx", "octocode-mcp@11.2.2"]
       // "type": "local",
       // "command": [
       //   "podman",
@@ -134,7 +134,7 @@
       "command": [
         "uvx",
         "--from",
-        "git+https://github.com/ast-grep/ast-grep-mcp",
+        "git+https://github.com/ast-grep/ast-grep-mcp@674272f1adb5",
         "ast-grep-server"
       ]
     },
@@ -185,7 +185,7 @@
       "command": [
         "uvx",
         "--from",
-        "redis-mcp-server@latest",
+        "redis-mcp-server@0.4.1",
         "redis-mcp-server",
         "--url",
         "redis://localhost:6379/0"
