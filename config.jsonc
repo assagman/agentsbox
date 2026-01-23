@@ -1,0 +1,210 @@
+{
+  "$schema": "./agentsbox.schema.json",
+  "mcp": {
+    "time": {
+      "type": "local",
+      // "command": ["podman", "run", "-i", "--rm", "time-mcp:latest"],
+      "command": ["uvx", "mcp-server-time"]
+    },
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    // WEB SEARCH
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    "brave": {
+      "type": "local",
+      // "command": [
+      //   "podman",
+      //   "run",
+      //   "-i",
+      //   "--rm",
+      //   "-e",
+      //   "BRAVE_API_KEY",
+      //   "docker.io/mcp/brave-search",
+      // ],
+      "command": ["bunx", "-y", "@brave/brave-search-mcp-server@2.0.63", "--transport", "stdio"]
+      // "environment": {
+      //   "BRAVE_API_KEY": "{env:BRAVE_API_KEY}",
+      // },
+    },
+    "tavily": {
+      "type": "remote",
+      "url": "https://mcp.tavily.com/mcp/",
+      // "command": [
+      //   "podman",
+      //   "run",
+      //   "-i",
+      //   "--rm",
+      //   "-e",
+      //   "TAVILY_API_KEY",
+      //   "tavily-mcp:latest",
+      // ],
+      // "command": {
+      //   "bunx",
+      //   "-y",
+      //   "mcp-remote",
+      //   "https://mcp.tavily.com/mcp/"
+      // },
+      "headers": {
+        "Authorization": "Bearer {env:TAVILY_API_KEY}"
+      }
+    },
+    "perplexity": {
+      "type": "local",
+      // "command": [
+      //   "podman",
+      //   "run",
+      //   "-i",
+      //   "--rm",
+      //   "-e",
+      //   "PERPLEXITY_API_KEY",
+      //   "perplexity-mcp:latest",
+      // ],
+      "command": ["bunx", "@perplexity-ai/mcp-server@0.5.2"]
+    },
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    // Z-AI
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    "zai-vision": {
+      "type": "local",
+      "command": ["bunx", "-y", "@z_ai/mcp-server@0.1.2"],
+      "environment": {
+        // "Z_AI_API_KEY": "{env:Z_AI_API_KEY}",
+        "Z_AI_MODE": "ZAI"
+      }
+    },
+    "zai-web-search-prime": {
+      "type": "remote",
+      "url": "https://api.z.ai/api/mcp/web_search_prime/mcp",
+      "headers": {
+        "Authorization": "Bearer {env:Z_AI_API_KEY}"
+      }
+    },
+    "zai-web-reader": {
+      "type": "remote",
+      "url": "https://api.z.ai/api/mcp/web_reader/mcp",
+      "headers": {
+        "Authorization": "Bearer {env:Z_AI_API_KEY}"
+      }
+    },
+    "zai-zread": {
+      "type": "remote",
+      "url": "https://api.z.ai/api/mcp/zread/mcp",
+      "headers": {
+        "Authorization": "Bearer {env:Z_AI_API_KEY}"
+      }
+    },
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    // Library-Package
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+      }
+      // "type": "local",
+      // "command": [
+      //   "podman",
+      //   "run",
+      //   "-i",
+      //   "--rm",
+      //   "-e",
+      //   "CONTEXT7_API_KEY",
+      //   "context7-mcp:latest",
+      // ],
+    },
+    "octocode": {
+      "type": "local",
+      "command": ["bunx", "octocode-mcp@11.2.2"]
+      // "type": "local",
+      // "command": [
+      //   "podman",
+      //   "run",
+      //   "-i",
+      //   "--rm",
+      //   "-e",
+      //   "OCTOCODE_GITHUB_TOKEN",
+      //   "octocode-mcp:latest",
+      // ],
+    },
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    // Code analysis/search/navigation
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    "ast-grep": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "git+https://github.com/ast-grep/ast-grep-mcp@674272f1adb5",
+        "ast-grep-server"
+      ]
+    },
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    // Cloud Services
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    // "firebase": {
+    //   "type": "local",
+    //   "command": ["bunx", "-y", "firebase-tools@16.2.1", "mcp"],
+    // },
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    // Security
+    // ~~~~~~~~~~~~~~~~~~~~~~
+    "semgrep": {
+      "type": "local",
+      "command": ["semgrep", "mcp"]
+    },
+    // ============================================================================
+    // BROWSER/UI AUTOMATION (Playwright Priority)
+    // ============================================================================
+    "playwright": {
+      "type": "local",
+      "command": ["bunx", "-y", "@playwright/mcp@0.0.55"]
+    },
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["bunx", "-y", "chrome-devtools-mcp@0.12.1"]
+    },
+    "browserbase": {
+      "type": "local",
+      "command": ["bunx", "-y", "@browserbasehq/mcp-server-browserbase@2.4.1"]
+      // "env": {
+      //   "BROWSERBASE_API_KEY": "",
+      //   "BROWSERBASE_PROJECT_ID": "",
+      //   "GEMINI_API_KEY": "",
+      // },
+    },
+    "xcodebuild-mcp": {
+      "type": "local",
+      "command": ["bunx", "-y", "xcodebuildmcp@1.15.1"],
+      "environment": {
+        "XCODEBUILDMCP_SENTRY_DISABLED": "false"
+      }
+    },
+    // --
+    "redis": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "redis-mcp-server@0.4.1",
+        "redis-mcp-server",
+        "--url",
+        "redis://localhost:6379/0"
+      ]
+    },
+    // thinking / reasonung / planning
+    "sequential-thinking": {
+      "type": "local",
+      "command": ["bunx", "-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  },
+  "settings": {
+    "defaultLimit": 5,
+    "initMode": "eager",
+    "connection": {
+      "connectTimeout": 5000,
+      "requestTimeout": 30000,
+      "retryAttempts": 2,
+      "retryDelay": 1000
+    }
+  }
+}
