@@ -129,38 +129,83 @@ agentsbox/
 
 ### Adding a New agentsbox Tool
 
-1. Define the tool in `src/runtime.ts`
-2. Add implementation logic
-3. Update types in `src/catalog/`
-4. Add tests in `test/`
-5. Update documentation
+agentsbox tools are implemented in the core runtime (`src/runtime.ts`) and then exposed via framework-specific integrations (`src/plugin.ts` for OpenCode, `src/pi.ts` for pi).
 
-Example:
+**Step 1: Add to Runtime Interface**
+
+Update `AgentsboxRuntime` interface in `src/runtime.ts`:
 
 ```typescript
-// src/runtime.ts
-export const tools: Tool[] = [
+export type AgentsboxRuntime = {
   // ... existing tools
-  {
-    name: 'agentsbox_my_new_tool',
-    description: 'Description of what this tool does',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        param1: { type: 'string', description: 'Parameter description' }
-      },
-      required: ['param1']
-    }
+  myNewTool: (args: { param1: string }) => Promise<string>;
+};
+```
+
+**Step 2: Implement in Runtime**
+
+Implement the method in `createAgentsboxRuntime` function in `src/runtime.ts`:
+
+```typescript
+async function myNewTool(args: { param1: string }): Promise<string> {
+  // 1. Ensure initialized
+  await ensureInitialized();
+
+  // 2. Perform logic
+  return JSON.stringify({ success: true, result: "..." });
+}
+
+return {
+  success: true,
+  runtime: {
+    // ...
+    myNewTool,
+  },
+};
+```
+
+**Step 3: Expose in OpenCode Plugin**
+
+Add the tool definition to `src/plugin.ts`:
+
+```typescript
+agentsbox_my_new_tool: tool({
+  description: "Description...",
+  args: {
+    param1: tool.schema.string().describe("..."),
+  },
+  async execute(args) {
+    const r = await ensureInitialized(); // or access runtime
+    // ... logic or call runtime method if accessible
+    // Note: plugin.ts currently duplicates some logic, future refactor will unify this.
   }
-];
+}),
+```
+
+**Step 4: Expose in pi Extension**
+
+Add the tool definition to `src/pi.ts`:
+
+```typescript
+pi.registerTool({
+  name: "agentsbox_my_new_tool",
+  // ...
+  async execute(...) {
+    const r = await getRuntime();
+    if (!r.success) return ...;
+    const out = await r.runtime.myNewTool(params);
+    return toToolResult(out);
+  }
+});
 ```
 
 ### Adding a New Search Backend
 
-1. Create new file in `src/search/`
-2. Implement the `SearchBackend` interface
-3. Register in `src/catalog/`
-4. Add tests
+1. Create new search implementation in `src/search/` (e.g., `src/search/vector.ts`).
+2. Add a new method to `AgentsboxRuntime` in `src/runtime.ts` (e.g., `searchVector`).
+3. Wire it up in `createAgentsboxRuntime`.
+4. Expose as `agentsbox_search_vector` in `src/plugin.ts` and `src/pi.ts`.
+
 
 ---
 

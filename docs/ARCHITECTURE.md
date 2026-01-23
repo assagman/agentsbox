@@ -118,7 +118,7 @@ Implements BM25 algorithm for semantic search:
 class BM25Index {
   addToolsBatch(tools: CatalogTool[]): void
   search(query: string, limit: number): SearchResult[]
-  getStats(): IndexStats
+  getStats(): { docCount: number; termCount: number; avgDocLength: number }
 }
 ```
 
@@ -136,7 +136,7 @@ function searchWithRegex(
   tools: CatalogTool[],
   pattern: string,
   limit: number
-): SearchResult[] | { error: string }
+): SearchResult[] | { error: RegexSearchError }
 ```
 
 **Use cases:**
@@ -152,11 +152,12 @@ Unified representation of tools from all MCP servers:
 
 ```typescript
 interface CatalogTool {
+  id: { server: string; name: string };
   idString: string;           // "{serverName}_{toolName}"
-  serverName: string;
-  name: string;
   description: string;
-  inputSchema: JSONSchema;
+  inputSchema: Record<string, unknown>;
+  searchableText: string;     // Indexed text
+  args: Array<{ name: string; description?: string }>;
 }
 ```
 
@@ -176,16 +177,16 @@ Centralized connection and call management:
 ```typescript
 class MCPManager {
   // Connection management
-  initialize(servers: Config["mcp"]): Promise<void>
-  initializeBackground(servers: Config["mcp"]): void
+  initialize(servers: Record<string, MCPServerConfig>): Promise<void>
+  initializeBackground(servers: Record<string, MCPServerConfig>): void
   waitForPartial(): Promise<void>
 
   // Tool calls
-  callTool(serverName: string, toolName: string, args: unknown): Promise<unknown>
+  callTool(serverName: string, toolName: string, args: Record<string, unknown>): Promise<unknown>
 
   // State queries
   getAllCatalogTools(): CatalogTool[]
-  getAllServers(): ServerInfo[]
+  getAllServers(): MCPServer[]
   isReady(): boolean
   isComplete(): boolean
 }
