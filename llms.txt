@@ -1,0 +1,100 @@
+# agentsbox
+Tool-search facade for MCP servers (OpenCode + pi integrations)
+
+## PURPOSE
+Reduce LLM context bloat by exposing only 6 stable tools that search/execute MCP server tools on-demand. Full MCP tool surface accessible via search.
+
+## TOOL SURFACE (6 tools always visible)
+- agentsbox_search_bm25(text, limit?): Search tools by natural language
+- agentsbox_search_regex(pattern, limit?): Search tools by regex on tool names
+- agentsbox_execute(toolId, arguments?): Execute discovered tool
+- agentsbox_status(): Get status (servers, tools, health)
+- agentsbox_perf(): Get performance metrics
+- agentsbox_test(timeout?): Test all tools with minimal inputs
+
+## TOOLID FORMAT
+toolId = {serverName}_{toolName}
+Server names MUST NOT contain underscores (enforced constraint)
+Examples: time_get_current_time, brave_web_search, tavily_search
+
+## WORKFLOW
+1. Search: agentsbox_search_bm25({text: "intent description"}) OR agentsbox_search_regex({pattern: "server_.*"})
+2. Execute: agentsbox_execute({toolId: "server_tool", arguments: '{"key":"value"}'})
+
+## SEARCH STRATEGY
+- Use regex when: know server name OR partial tool name (faster)
+- Use bm25 when: know what you want to do but NOT tool name (semantic)
+- Fallback chain: regex → bm25 → status → ask user
+- Discovery patterns:
+  - List all: regex({pattern: ".*"})
+  - Server tools: regex({pattern: "serverName_.*"})
+  - Free search: bm25({text: "keywords"})
+
+## CONFIGURATION
+- Path: ~/.config/agentsbox/config.jsonc (or AGENTSBOX_CONFIG env)
+- Env interpolation: {env:VAR_NAME} → process.env.VAR_NAME
+- MCP servers:
+  - local: {type: "local", command: ["uvx", "server"], environment: {...}}
+  - remote: {type: "remote", url: "https://...", headers: {...}}
+- Settings: defaultLimit (number), initMode ("eager"|"lazy"), connection timeouts
+
+## INITIALIZATION
+- eager: connect all servers in background immediately after plugin load (default)
+- lazy: connect only when first search/execute requested
+- Thread-safe: multiple concurrent searches share one initialization
+
+## ARCHITECTURE
+Components: ToolSurface → SearchLayer (BM25+regex) → Catalog → MCPManager → MCPServers(local/remote)
+Search: BM25Index for semantic, regex for pattern matching
+Catalog: unified tool representation from all servers, indexed incrementally
+MCPManager: connection mgmt (eager/lazy), tool call routing, error handling, retries
+
+## ERROR HANDLING
+Search returns empty: check servers connected via status(), verify tools indexed
+Execute fails: check toolId format, validate arguments against schema, check server health
+Error response format: {success: false, error: string, server: {name, status, error}}
+
+## PERFORMANCE
+BM25 search: <10ms, Regex: <5ms, Tool execution: 50-500ms (server dependent)
+Memory: ~150KB per 100 tools (catalog + index), ~1MB per MCP client
+Optimization: use regex for known patterns, limit search results, appropriate timeouts
+
+## AGENT BEHAVIOR RULES
+- ALWAYS search before saying "I cannot do that"
+- ALWAYS search if user wants to use tools or refers to unknown tool names
+- Use regex for known prefixes, bm25 for semantic search
+- Get schema from search result before building arguments
+- Handle errors gracefully, provide helpful feedback
+- Use status() for diagnostics, test() to verify tools, perf() for performance issues
+
+## INTEGRATIONS
+- OpenCode: plugin via agentsbox/setup opencode → ~/.config/opencode/plugins/agentsbox.js
+- pi: extension via agentsbox/setup pi → ~/.pi/agent/extensions/agentsbox
+- CLI: agentsbox init (config+schema+skill), agentsbox setup <target> (install integration)
+
+## KEY TYPES
+CatalogTool: {idString, serverName, name, description, inputSchema}
+SearchResult: {idString, preview, score}
+Config: {mcp: Record<string, MCPServerConfig>, settings: Settings}
+MCPServerConfig: {type: "local"|"remote", command?, url?, headers?, environment?}
+
+## TESTING
+agentsbox_test({timeout: 10000}) executes every tool with minimal predefined inputs, returns pass/fail
+Use to verify tool availability before execution attempts
+
+## TROUBLESHOOTING
+status() → check servers.connected, tools.total, health.status
+perf() → check initDuration, searchLatency, executionLatency
+test() → identify broken tools
+Common: server not connected (check config), toolId format wrong (need underscore), arguments invalid (check schema)
+
+## CODEBASE STRUCTURE
+src/catalog/ - tool catalog + types
+src/config/ - config loading + validation
+src/mcp-client/ - MCP manager (local/remote/fake)
+src/search/ - BM25 + regex search
+src/profiler/ - performance tracking
+src/runtime.ts - core runtime + tool registration
+src/plugin.ts - OpenCode plugin
+src/pi.ts - pi extension
+src/cli.ts - CLI (init/setup)
