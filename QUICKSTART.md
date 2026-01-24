@@ -148,14 +148,15 @@ bun dist/cli.js setup pi
 
 **What this does:**
 
-- Creates wrapper extension at `~/.config/agentsbox/integrations/pi/extension/`
-- Symlinks the current agentsbox package into wrapper's `node_modules`
-- Symlinks the wrapper into `~/.pi/agent/extensions/agentsbox`
+- Symlinks `dist/pi-extension/` → `~/.pi/agent/extensions/agentsbox` (extension auto-discovered)
+- Symlinks bundled skill → `~/.pi/agent/skills/agentsbox` (skill auto-discovered)
+- Creates config at `~/.config/agentsbox/config.jsonc`
 
 **Verify:**
 
 ```bash
 ls -la ~/.pi/agent/extensions/agentsbox
+ls -la ~/.pi/agent/skills/agentsbox
 ```
 
 ---

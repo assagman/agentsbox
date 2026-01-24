@@ -41,20 +41,20 @@ Minimize context bloat by using a small, stable tool surface:
 
 ## Examples
 
-### Find a time tool
+### Search the web with tavily
 
 1) Search:
 
 ```text
-agentsbox_search_bm25({ "text": "get current time in a timezone", "limit": 5 })
+agentsbox_search_bm25({ "text": "search the web for information", "limit": 5 })
 ```
 
 2) Execute:
 
 ```text
 agentsbox_execute({
-  "toolId": "time_get_current_time",
-  "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+  "toolId": "tavily_tavily_search",
+  "arguments": "{\"query\":\"latest AI news\",\"max_results\":5}"
 })
 ```
 
@@ -63,7 +63,3 @@ agentsbox_execute({
 - **Empty or missing servers**: `agentsbox_status` will show zero configured servers.
 - **Schema mismatch**: prefer passing only required fields first.
 - **Server name/tool name ambiguity**: use regex to list server tools: `"server_.*"`.
-
-## References
-
-- `references/REFERENCE.md`

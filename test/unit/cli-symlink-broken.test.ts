@@ -1,11 +1,22 @@
 import { describe, expect, test } from "bun:test";
-import { cp, lstat, mkdir, mkdtemp, readlink, rm, symlink, writeFile } from "node:fs/promises";
+import {
+  cp,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readlink,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 async function createSandboxPackageRoot(opts: { withDistPi: boolean }): Promise<string> {
   const repoRoot = join(import.meta.dir, "..", "..");
-  const sandboxRoot = await mkdtemp(join(tmpdir(), "agentsbox-pkg-"));
+  // realpath resolves macOS /var → /private/var symlink.
+  const sandboxRoot = await realpath(await mkdtemp(join(tmpdir(), "agentsbox-pkg-")));
 
   await cp(join(repoRoot, "src"), join(sandboxRoot, "src"), { recursive: true });
   await cp(join(repoRoot, "skill"), join(sandboxRoot, "skill"), { recursive: true });
@@ -34,10 +45,10 @@ describe("agentsbox cli symlink handling", () => {
     const home = await mkdtemp(join(tmpdir(), "agentsbox-pi-home-"));
     const xdg = await mkdtemp(join(tmpdir(), "agentsbox-pi-xdg-"));
 
-    const piDest = join(home, ".pi", "agent", "extensions", "agentsbox");
+    const piDest = join(home, ".pi", "agent", "extensions", "agentsbox.js");
 
     try {
-      // Pre-create a broken/dangling symlink where setup wants to link the wrapper.
+      // Pre-create a broken/dangling symlink where setup wants to link pi.js.
       await mkdir(dirname(piDest), { recursive: true });
       await symlink(join(home, "does-not-exist"), piDest);
 
@@ -71,7 +82,7 @@ describe("agentsbox cli symlink handling", () => {
       expect(st.isSymbolicLink()).toBe(true);
 
       const target = await readlink(piDest);
-      expect(target).toBe(join(xdg, "agentsbox", "integrations", "pi", "extension"));
+      expect(target).toBe(join(sandboxRoot, "dist", "pi.js"));
     } finally {
       await rm(sandboxRoot, { recursive: true, force: true });
       await rm(home, { recursive: true, force: true });

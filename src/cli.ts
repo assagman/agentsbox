@@ -28,13 +28,15 @@ type Action =
   | { kind: "mkdir"; path: string }
   | { kind: "write"; path: string; content: string; mode: WriteMode }
   | { kind: "copy"; from: string; to: string; recursive: boolean; mode: CopyMode }
-  | { kind: "symlink"; from: string; to: string; mode: LinkMode };
+  | { kind: "symlink"; from: string; to: string; mode: LinkMode }
+  | { kind: "remove"; path: string; onlyIfSymlink?: boolean };
 
 type Summary = {
   created: string[];
   modified: string[];
   copied: string[];
   linked: string[];
+  removed: string[];
   skipped: string[];
 };
 
@@ -60,6 +62,7 @@ Defaults:
   agentsbox config dir:  ~/.config/agentsbox
   OpenCode plugins dir:  ~/.config/opencode/plugins
   pi extensions dir:     ~/.pi/agent/extensions
+  pi skills dir:         ~/.pi/agent/skills
 
 Options:
   --dry-run    Print planned filesystem changes only
@@ -126,6 +129,7 @@ function summarize(summary: Summary): string {
     ["modified", String(summary.modified.length)],
     ["copied", String(summary.copied.length)],
     ["linked", String(summary.linked.length)],
+    ["removed", String(summary.removed.length)],
     ["skipped", String(summary.skipped.length)],
   ];
   return table("summary", rows);
@@ -151,31 +155,182 @@ function addEffect(summary: Summary, effect: keyof Summary, p: string) {
   summary[effect].push(p);
 }
 
+type PreviewResult = "ok" | "create" | "update" | "remove" | "skip" | "error";
+type PreviewEntry = { action: Action; result: PreviewResult; label: string; detail?: string };
+
+async function previewAction(a: Action, force: boolean): Promise<PreviewEntry> {
+  switch (a.kind) {
+    case "assert-exists": {
+      const exists = await pathExists(a.path);
+      return {
+        action: a,
+        result: exists ? "ok" : "error",
+        label: a.path,
+        detail: exists ? undefined : a.hint,
+      };
+    }
+    case "mkdir": {
+      const exists = await pathExists(a.path);
+      return {
+        action: a,
+        result: exists ? "ok" : "create",
+        label: a.path,
+      };
+    }
+    case "write": {
+      const existing = await readTextIfExists(a.path);
+      const exists = existing !== null;
+      if (!exists) return { action: a, result: "create", label: a.path };
+      if (a.mode === "write-if-missing" && !force)
+        return { action: a, result: "ok", label: a.path };
+      if (a.mode === "write-if-different" && existing === a.content && !force)
+        return { action: a, result: "ok", label: a.path };
+      return { action: a, result: "update", label: a.path };
+    }
+    case "copy": {
+      const srcExists = await pathExists(a.from);
+      if (!srcExists)
+        return { action: a, result: "error", label: a.to, detail: `source missing: ${a.from}` };
+      const destExists = await pathExists(a.to);
+      if (!destExists) return { action: a, result: "create", label: a.to };
+      if (a.mode === "copy-if-missing" && !force) return { action: a, result: "ok", label: a.to };
+      if (a.mode === "copy-if-different" && !force) {
+        const srcStat = await stat(a.from);
+        const dstStat = await stat(a.to);
+        if (srcStat.isFile() && dstStat.isFile() && srcStat.size === dstStat.size) {
+          const [srcBuf, dstBuf] = await Promise.all([readFile(a.from), readFile(a.to)]);
+          if (Buffer.compare(srcBuf, dstBuf) === 0) return { action: a, result: "ok", label: a.to };
+        }
+      }
+      return { action: a, result: "update", label: a.to };
+    }
+    case "symlink": {
+      const destStat = await lstatIfExists(a.to);
+      const destExists = destStat !== null;
+      const destIsSymlink = destStat?.isSymbolicLink() ?? false;
+      if (destExists && destIsSymlink) {
+        const currentTarget = await readSymlinkTargetIfExists(a.to);
+        if (currentTarget === a.from)
+          return { action: a, result: "ok", label: a.to, detail: `→ ${a.from}` };
+        return { action: a, result: "update", label: a.to, detail: `→ ${a.from}` };
+      }
+      if (destExists && !destIsSymlink) {
+        return {
+          action: a,
+          result: "error",
+          label: a.to,
+          detail: "non-symlink exists, remove manually",
+        };
+      }
+      return { action: a, result: "create", label: a.to, detail: `→ ${a.from}` };
+    }
+    case "remove": {
+      const s = await lstatIfExists(a.path);
+      if (!s) return { action: a, result: "ok", label: a.path };
+      if (a.onlyIfSymlink && !s.isSymbolicLink()) return { action: a, result: "ok", label: a.path };
+      return { action: a, result: "remove", label: a.path };
+    }
+  }
+}
+
+const STATUS_ICONS: Record<PreviewResult, string> = {
+  ok: "✓",
+  create: "+",
+  update: "~",
+  remove: "-",
+  skip: "·",
+  error: "✗",
+};
+
+function shortenPath(p: string): string {
+  const home = homedir();
+  if (p.startsWith(home)) return "~" + p.slice(home.length);
+  return p;
+}
+
+function printPlan(entries: PreviewEntry[]) {
+  // Filter out "ok" mkdir (noise) and group meaningfully
+  const meaningful = entries.filter((e) => !(e.action.kind === "mkdir" && e.result === "ok"));
+
+  if (meaningful.length === 0) return;
+
+  for (const e of meaningful) {
+    const icon = STATUS_ICONS[e.result];
+    const kindTag =
+      e.action.kind === "assert-exists"
+        ? "check"
+        : e.action.kind === "mkdir"
+          ? "dir"
+          : e.action.kind;
+    const label = shortenPath(e.label);
+    // For symlinks, detail is "→ /path" - shorten the path part
+    let detail = "";
+    if (e.detail) {
+      const shortened = e.detail.startsWith("→ ")
+        ? `→ ${shortenPath(e.detail.slice(2))}`
+        : shortenPath(e.detail);
+      detail = `  (${shortened})`;
+    }
+    console.log(`  ${icon} ${kindTag.padEnd(7)} ${label}${detail}`);
+  }
+
+  // Tally
+  const counts = { create: 0, update: 0, remove: 0, ok: 0, error: 0 };
+  for (const e of meaningful) {
+    if (e.result === "ok" || e.result === "skip") counts.ok++;
+    else if (e.result in counts) counts[e.result as keyof typeof counts]++;
+  }
+
+  const parts: string[] = [];
+  if (counts.create) parts.push(`${counts.create} create`);
+  if (counts.update) parts.push(`${counts.update} update`);
+  if (counts.remove) parts.push(`${counts.remove} remove`);
+  if (counts.ok) parts.push(`${counts.ok} ok`);
+  if (counts.error) parts.push(`${counts.error} error`);
+  console.log(`\n  ${parts.join(", ")}`);
+}
+
 async function applyPlannedActions(actions: Action[], opts: { dryRun: boolean; force: boolean }) {
   const { dryRun, force } = opts;
 
-  // Always print plan first
+  // Pre-evaluate all actions
+  const entries: PreviewEntry[] = [];
   for (const a of actions) {
-    switch (a.kind) {
-      case "assert-exists":
-        console.log(`check   ${a.path}${a.hint ? ` (${a.hint})` : ""}`);
-        break;
-      case "mkdir":
-        console.log(`mkdir   ${a.path}`);
-        break;
-      case "write":
-        console.log(`write   ${a.path} (${a.mode})`);
-        break;
-      case "copy":
-        console.log(`copy    ${a.from} -> ${a.to} (${a.mode})`);
-        break;
-      case "symlink":
-        console.log(`symlink ${a.from} -> ${a.to} (${a.mode})`);
-        break;
-    }
+    entries.push(await previewAction(a, force));
   }
 
-  if (dryRun) return;
+  // Print clean plan
+  printPlan(entries);
+
+  // Check for errors
+  const errors = entries.filter((e) => e.result === "error");
+  const hasErrors = errors.length > 0;
+
+  // Nothing to do?
+  const hasChanges = entries.some(
+    (e) => e.result !== "ok" && e.result !== "skip" && e.result !== "error",
+  );
+  if (!hasChanges && !hasErrors) {
+    console.log("\n  Everything up to date.");
+    return;
+  }
+
+  if (dryRun) {
+    if (hasErrors) {
+      console.log("");
+      for (const e of errors)
+        console.error(`error: ${shortenPath(e.label)}${e.detail ? ` — ${e.detail}` : ""}`);
+    }
+    return;
+  }
+
+  // Abort on errors (only when actually applying)
+  if (hasErrors) {
+    console.log("");
+    for (const e of errors)
+      console.error(`error: ${shortenPath(e.label)}${e.detail ? ` — ${e.detail}` : ""}`);
+    process.exit(1);
+  }
 
   const ok = await confirmApply();
   if (!ok) {
@@ -183,7 +338,14 @@ async function applyPlannedActions(actions: Action[], opts: { dryRun: boolean; f
     return;
   }
 
-  const summary: Summary = { created: [], modified: [], copied: [], linked: [], skipped: [] };
+  const summary: Summary = {
+    created: [],
+    modified: [],
+    copied: [],
+    linked: [],
+    removed: [],
+    skipped: [],
+  };
 
   for (const a of actions) {
     switch (a.kind) {
@@ -291,6 +453,20 @@ async function applyPlannedActions(actions: Action[], opts: { dryRun: boolean; f
         addEffect(summary, "linked", a.to);
         break;
       }
+      case "remove": {
+        const s = await lstatIfExists(a.path);
+        if (!s) {
+          addEffect(summary, "skipped", a.path);
+          break;
+        }
+        if (a.onlyIfSymlink && !s.isSymbolicLink()) {
+          addEffect(summary, "skipped", a.path);
+          break;
+        }
+        await rm(a.path, { force: true, recursive: true });
+        addEffect(summary, "removed", a.path);
+        break;
+      }
     }
   }
 
@@ -299,6 +475,7 @@ async function applyPlannedActions(actions: Action[], opts: { dryRun: boolean; f
   printList("Modified", summary.modified);
   printList("Copied", summary.copied);
   printList("Linked", summary.linked);
+  printList("Removed", summary.removed);
   printList("Skipped", summary.skipped);
 }
 
@@ -393,68 +570,45 @@ async function planSetupPi(opts: {
   force: boolean;
   pkgRoot: string;
   piExtensionsDir: string;
+  piSkillsDir: string;
 }): Promise<Action[]> {
-  const { configDir, force, pkgRoot, piExtensionsDir } = opts;
+  const { configDir, force, pkgRoot, piExtensionsDir, piSkillsDir } = opts;
 
   const actions: Action[] = [];
 
-  // Ensure built pi entrypoint exists (checked at apply-time, after confirmation)
+  // dist/pi.js is a fully-bundled entrypoint — no wrapper needed.
   const srcPiEntrypoint = join(pkgRoot, "dist", "pi.js");
   actions.push({ kind: "assert-exists", path: srcPiEntrypoint, hint: "Run: bun run build" });
 
   // Ensure agentsbox config + skill
   actions.push(...(await planInit({ configDir, force, pkgRoot })));
 
-  const wrapperDir = join(configDir, "integrations", "pi", "extension");
-  const wrapperPkgJson = join(wrapperDir, "package.json");
-  const wrapperIndex = join(wrapperDir, "src", "index.ts");
+  // Clean up legacy flat symlink (pre-v0.3 created agentsbox.js directly).
+  const legacyFlatSymlink = join(piExtensionsDir, "agentsbox.js");
+  actions.push({ kind: "remove", path: legacyFlatSymlink, onlyIfSymlink: true });
 
-  const wrapperPkgContent = `{
-  "name": "agentsbox-pi-extension",
-  "private": true,
-  "type": "module",
-  "pi": {
-    "extensions": ["./src/index.ts"]
-  }
-}
-`;
+  // Symlink entire extension directory: ~/.pi/agent/extensions/agentsbox/ → dist/pi-extension/
+  // dist/pi-extension/ contains: package.json (type:module) + index.js → ../pi.js
+  const srcExtDir = join(pkgRoot, "dist", "pi-extension");
+  actions.push({ kind: "assert-exists", path: srcExtDir, hint: "Run: bun run build" });
 
-  const wrapperIndexContent = `import ext from "agentsbox/pi";
-
-export default ext;
-`;
-
-  actions.push({ kind: "mkdir", path: wrapperDir });
-  actions.push({ kind: "mkdir", path: join(wrapperDir, "src") });
-  actions.push({ kind: "mkdir", path: join(wrapperDir, "node_modules") });
-
-  actions.push({
-    kind: "write",
-    path: wrapperPkgJson,
-    content: wrapperPkgContent,
-    mode: force ? "overwrite" : "write-if-different",
-  });
-  actions.push({
-    kind: "write",
-    path: wrapperIndex,
-    content: wrapperIndexContent,
-    mode: force ? "overwrite" : "write-if-different",
-  });
-
-  // Link the current agentsbox package into wrapper/node_modules
-  actions.push({
-    kind: "symlink",
-    from: pkgRoot,
-    to: join(wrapperDir, "node_modules", "agentsbox"),
-    mode: force ? "overwrite" : "link-if-different",
-  });
-
-  // Register extension for pi by symlinking the wrapper into pi extensions
   actions.push({ kind: "mkdir", path: piExtensionsDir });
   actions.push({
     kind: "symlink",
-    from: wrapperDir,
+    from: srcExtDir,
     to: join(piExtensionsDir, "agentsbox"),
+    mode: force ? "overwrite" : "link-if-different",
+  });
+
+  // Symlink skill into pi's skill discovery path (~/.pi/agent/skills/agentsbox).
+  // Pi discovers skills from ~/.pi/agent/skills/**/SKILL.md recursively.
+  const destSkillDir = join(configDir, "skill", "agentsbox");
+  const piSkillLink = join(piSkillsDir, "agentsbox");
+  actions.push({ kind: "mkdir", path: piSkillsDir });
+  actions.push({
+    kind: "symlink",
+    from: destSkillDir,
+    to: piSkillLink,
     mode: force ? "overwrite" : "link-if-different",
   });
 
@@ -478,6 +632,7 @@ async function main() {
   const configDir = join(xdgConfigHome, "agentsbox");
   const opencodePluginsDir = join(xdgConfigHome, "opencode", "plugins");
   const piExtensionsDir = join(homedir(), ".pi", "agent", "extensions");
+  const piSkillsDir = join(homedir(), ".pi", "agent", "skills");
 
   if (cmd === "init") {
     const actions = await planInit({ configDir, force, pkgRoot });
@@ -495,7 +650,13 @@ async function main() {
     }
 
     if (target === "pi") {
-      const actions = await planSetupPi({ configDir, force, pkgRoot, piExtensionsDir });
+      const actions = await planSetupPi({
+        configDir,
+        force,
+        pkgRoot,
+        piExtensionsDir,
+        piSkillsDir,
+      });
       await applyPlannedActions(actions, { dryRun, force });
       return;
     }

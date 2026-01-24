@@ -27,7 +27,7 @@ Initial public release.
 - CLI-only setup flows:
   - `agentsbox init`: scaffold XDG config (`config.jsonc`), local schema (`agentsbox.schema.json`), and bundled `skill/agentsbox/**`.
   - `agentsbox setup opencode`: install a local OpenCode shim plugin.
-  - `agentsbox setup pi`: install a local pi extension wrapper.
+  - `agentsbox setup pi`: install a local pi extension (symlinks `dist/pi-extension/` → `~/.pi/agent/extensions/agentsbox`).
 - Integrations:
   - OpenCode plugin entrypoint (`agentsbox/opencode`).
   - pi extension entrypoint (`agentsbox/pi`).
