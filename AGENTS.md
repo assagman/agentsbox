@@ -229,6 +229,8 @@ const searchResult = agentsbox_search_bm25({
 // Step 2: Pick best tool
 const tool = searchResult.tools[0]  // e.g., "brave_web_search"
 
+const userQuery = "AI news";
+
 // Step 3: Build arguments
 const args = {
   query: userQuery,
@@ -273,6 +275,10 @@ const result = agentsbox_search_bm25({
   limit: 5
 })
 
+if (result.tools.length === 0) {
+  return "No scraping tools found";
+}
+
 // Execute
 const scrapeResult = JSON.parse(agentsbox_execute({
   toolId: result.tools[0].name,
@@ -292,9 +298,12 @@ const result = agentsbox_search_regex({
   limit: 10
 })
 
+const structureTool = result.tools.find(t => t.name.includes("githubViewRepoStructure"))
+const searchTool = result.tools.find(t => t.name.includes("githubSearchCode"))
+
 // Find repo
 const repoResult = JSON.parse(agentsbox_execute({
-  toolId: "octocode_githubViewRepoStructure",
+  toolId: structureTool.name,
   arguments: JSON.stringify({
     owner: "owner",
     repo: "repo"
@@ -303,7 +312,7 @@ const repoResult = JSON.parse(agentsbox_execute({
 
 // Search code
 const searchResult = JSON.parse(agentsbox_execute({
-  toolId: "octocode_githubSearchCode",
+  toolId: searchTool.name,
   arguments: JSON.stringify({
     query: "function search",
     maxResults: 10
@@ -322,9 +331,9 @@ const searchResult = JSON.parse(agentsbox_execute({
 const status = agentsbox_status({})
 
 // Check:
-// - status.servers.connected > 0?
-// - status.tools.total > 0?
-// - status.health.status === "healthy"?
+// - status.servers.connected > 0
+// - status.tools.total > 0
+// - status.health.status === "healthy"
 ```
 
 **Actions:**
@@ -345,7 +354,7 @@ if (!result.success) {
 
   // Check if server is connected
   if (result.server.status === "unknown") {
-    // Server not in config or failed to connect
+    // Server not configured or failed to establish initial connection
   }
 }
 ```
