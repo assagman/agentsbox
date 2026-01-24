@@ -27,10 +27,20 @@ async function createSandboxPackageRoot(opts: { withDistPi: boolean }): Promise<
   if (opts.withDistPi) {
     const distDir = join(sandboxRoot, "dist");
     await mkdir(distDir, { recursive: true });
-    // CLI only checks existence during apply, so a small placeholder is sufficient.
+
+    // CLI asserts existence of dist/pi.js and dist/pi-extension/.
     await writeFile(
       join(distDir, "pi.js"),
       "export default function agentsboxPiExtension() {}\n",
+      "utf8",
+    );
+
+    const piExtDir = join(distDir, "pi-extension");
+    await mkdir(piExtDir, { recursive: true });
+    await writeFile(join(piExtDir, "index.js"), "export { default } from '../pi.js'\n", "utf8");
+    await writeFile(
+      join(piExtDir, "package.json"),
+      JSON.stringify({ name: "agentsbox", type: "module" }, null, 2) + "\n",
       "utf8",
     );
   }
@@ -45,10 +55,10 @@ describe("agentsbox cli symlink handling", () => {
     const home = await mkdtemp(join(tmpdir(), "agentsbox-pi-home-"));
     const xdg = await mkdtemp(join(tmpdir(), "agentsbox-pi-xdg-"));
 
-    const piDest = join(home, ".pi", "agent", "extensions", "agentsbox.js");
+    const piDest = join(home, ".pi", "agent", "extensions", "agentsbox");
 
     try {
-      // Pre-create a broken/dangling symlink where setup wants to link pi.js.
+      // Pre-create a broken/dangling symlink where setup wants to link dist/pi-extension.
       await mkdir(dirname(piDest), { recursive: true });
       await symlink(join(home, "does-not-exist"), piDest);
 
@@ -82,7 +92,7 @@ describe("agentsbox cli symlink handling", () => {
       expect(st.isSymbolicLink()).toBe(true);
 
       const target = await readlink(piDest);
-      expect(target).toBe(join(sandboxRoot, "dist", "pi.js"));
+      expect(target).toBe(join(sandboxRoot, "dist", "pi-extension"));
     } finally {
       await rm(sandboxRoot, { recursive: true, force: true });
       await rm(home, { recursive: true, force: true });
