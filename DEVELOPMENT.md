@@ -322,4 +322,4 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 - Open an issue on GitHub
 - Check [ARCHITECTURE.md](docs/ARCHITECTURE.md) for deep-dive details
-- See [QUICKSTART.md](../QUICKSTART.md) for usage examples
+- See [QUICKSTART.md](QUICKSTART.md) for usage examples
