@@ -268,21 +268,26 @@ Husky runs `lint-staged` on commit, automatically formatting changed files.
 
 ```bash
 export AGENTSBOX_DEBUG=1
-npx agentsbox status
 ```
+
+Set this environment variable before running your agent to see detailed logging.
 
 ### Inspect MCP Server Connections
 
-```bash
-npx agentsbox status
-# Shows server connection details, tool counts, and health
+Use the agentsbox tools from within your agent:
+
+```javascript
+// From agent/coding assistant
+agentsbox_status({})
+// Returns: server connections, tool counts, health status
 ```
 
 ### Performance Profiling
 
-```bash
-npx agentsbox perf
-# Shows initialization times, search latencies, execution stats
+```javascript
+// From agent/coding assistant
+agentsbox_perf({})
+// Returns: performance metrics, latencies, per-server stats
 ```
 
 ---

@@ -276,7 +276,7 @@ const result = agentsbox_search_bm25({
 })
 
 if (result.tools.length === 0) {
-  return "No scraping tools found";
+  return "No scraping tools found. Please configure a web scraping MCP server.";
 }
 
 // Execute
