@@ -509,5 +509,5 @@ async function ensureInitialized(): Promise<void> {
 
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [BM25 Algorithm](https://en.wikipedia.org/wiki/Okapi_BM25)
-- [Development Guide](./DEVELOPMENT.md)
-- [Configuration Reference](./CONFIG.md)
+- [Development Guide](../DEVELOPMENT.md)
+- [Configuration Reference](../CONFIG.md)

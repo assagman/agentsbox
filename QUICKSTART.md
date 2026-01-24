@@ -464,6 +464,6 @@ Look for:
 ## Next Steps
 
 - [Configuration reference](./CONFIG.md)
-- [Architecture deep-dive](./ARCHITECTURE.md)
+- [Architecture deep-dive](./docs/ARCHITECTURE.md)
 - [Development guide](./DEVELOPMENT.md)
 - [For coding agents](./AGENTS.md)

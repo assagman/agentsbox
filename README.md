@@ -222,7 +222,7 @@ agentsbox/
 | [README.md](./README.md) | This file – project overview |
 | [QUICKSTART.md](./QUICKSTART.md) | Detailed usage guide with examples |
 | [DEVELOPMENT.md](./DEVELOPMENT.md) | Contributor guide |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Architecture deep-dive |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture deep-dive |
 | [CONFIG.md](./CONFIG.md) | Configuration reference |
 | [AGENTS.md](./AGENTS.md) | Guidelines for coding agents using agentsbox |
 | [llms.txt](./llms.txt) | Compressed context for LLMs |

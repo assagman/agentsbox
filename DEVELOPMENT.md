@@ -316,5 +316,5 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 ## Questions?
 
 - Open an issue on GitHub
-- Check [ARCHITECTURE.md](./ARCHITECTURE.md) for deep-dive details
+- Check [ARCHITECTURE.md](docs/ARCHITECTURE.md) for deep-dive details
 - See [QUICKSTART.md](../QUICKSTART.md) for usage examples
