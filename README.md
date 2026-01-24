@@ -14,7 +14,7 @@ Tool-search facade for MCP servers (OpenCode + pi integrations).
 ### NPM Package
 
 ```bash
-bun install -g agentsbox
+npm install -g agentsbox
 ```
 
 After installation via npm, initialize the configuration:
@@ -33,7 +33,7 @@ This creates the config directory under `$XDG_CONFIG_HOME/agentsbox` (usually `~
 npx agentsbox setup opencode
 ```
 
-Installs the plugin by symlinking to `~/.config/opencode/plugins/agentsbox.js` (auto-loaded by OpenCode).
+Installs the plugin by copying `dist/opencode.js` to `~/.config/opencode/plugins/agentsbox.js` (auto-loaded by OpenCode).
 
 #### pi
 
@@ -206,9 +206,9 @@ agentsbox/
 │   ├── pi.ts          # pi extension implementation
 │   └── cli.ts         # CLI (init/setup commands)
 ├── docs/
-│   ├── ARCHITECTURE.md    # Architecture deep-dive
-│   ├── DEVELOPMENT.md     # Contributor guide
-│   └── QUICKSTART.md      # Detailed usage guide
+│   └── ARCHITECTURE.md    # Architecture deep-dive
+├── DEVELOPMENT.md     # Contributor guide
+├── QUICKSTART.md      # Detailed usage guide
 ├── skill/agentsbox/   # Bundled skill for agents
 └── dist/              # Built output
 ```

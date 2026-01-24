@@ -279,9 +279,11 @@ if (result.tools.length === 0) {
   return "No scraping tools found. Please configure a web scraping MCP server.";
 }
 
+const tool = result.tools[0];
+
 // Execute
 const scrapeResult = JSON.parse(agentsbox_execute({
-  toolId: result.tools[0].name,
+  toolId: tool.name,
   arguments: JSON.stringify({ url: userUrl })
 }))
 
