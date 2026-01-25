@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-01-25
+
+### Added
+- Dev scripts for CLI automation (#6):
+  - `devscripts/check-pr-conversations.sh`: summarize PR review thread resolution status via `gh` GraphQL.
+  - `devscripts/docsync_scan.sh`: generate a repo snapshot JSON for doc sync tooling (requires `fd`, `rg`, `jq`).
+
+### Changed
+- Documentation: standardized CLI command usage across `README.md`, `QUICKSTART.md`, `DEVELOPMENT.md`, and `CONFIG.md` (#6).
+
+### Fixed
+- **pi**: make extension installation more robust by generating a portable re-export shim at `dist/pi-extension/index.js` (avoids symlink edge cases; resolves real paths for symlinked extension dirs) (#6).
+
 
 ## [0.1.1] - 2026-01-25
 
