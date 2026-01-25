@@ -199,6 +199,10 @@ git fetch origin
 ```bash
 # Find the release PR number specifically for release branch
 RELEASE_PR=$(gh pr list --state open --head "release-v*" --json number -q '.[0].number')
+if [ -z "$RELEASE_PR" ]; then
+  echo "Error: Could not find an open release PR." >&2
+  exit 1
+fi
 
 # Merge release PR
 gh pr merge "$RELEASE_PR" --squash
@@ -281,17 +285,39 @@ gh workflow run "Create Release PR" -f version_type="$VERSION_TYPE"
 # === STEP 8: Wait for release workflow ===
 sleep 5
 while [ "$(gh run list --workflow='Create Release PR' -L 1 --json status -q 'length')" -eq 0 ]; do sleep 5; done
-while [ "$(gh run list --workflow='Create Release PR' -L 1 --json conclusion -q '.[0].conclusion // empty')" != "success" ]; do sleep 5; done
+while true; do
+  conclusion=$(gh run list --workflow='Create Release PR' -L 1 --json conclusion -q '.[0].conclusion // empty')
+  if [ "$conclusion" = "success" ]; then
+    break
+  elif [[ "$conclusion" = "failure" || "$conclusion" = "cancelled" || "$conclusion" = "skipped" ]]; then
+    echo "'Create Release PR' workflow failed with conclusion: $conclusion"
+    exit 1
+  fi
+  sleep 5
+done
 
 # === STEP 9: Merge release PR ===
 git fetch origin
 RELEASE_PR=$(gh pr list --state open --head "release-v*" --json number -q '.[0].number')
+if [ -z "$RELEASE_PR" ]; then
+  echo "Error: Could not find an open release PR." >&2
+  exit 1
+fi
 gh pr merge "$RELEASE_PR" --squash
 
 # === STEP 10: Wait for publish ===
 sleep 5
 while [ "$(gh run list --workflow='Publish Release' -L 1 --json status -q 'length')" -eq 0 ]; do sleep 5; done
-while [ "$(gh run list --workflow='Publish Release' -L 1 --json conclusion -q '.[0].conclusion // empty')" != "success" ]; do sleep 5; done
+while true; do
+  conclusion=$(gh run list --workflow='Publish Release' -L 1 --json conclusion -q '.[0].conclusion // empty')
+  if [ "$conclusion" = "success" ]; then
+    break
+  elif [[ "$conclusion" = "failure" || "$conclusion" = "cancelled" || "$conclusion" = "skipped" ]]; then
+    echo "'Publish Release' workflow failed with conclusion: $conclusion"
+    exit 1
+  fi
+  sleep 5
+done
 
 # === STEP 11: Cleanup ===
 git checkout main && git pull origin main
