@@ -16,7 +16,7 @@ bun install
 bun run build
 ```
 
-The CLI is now available at `bun dist/cli.js` (or link to `$PATH` with `bun link`).
+Ensure the `agentsbox` CLI is on your `PATH` (e.g., via npm global install or `bun link`).
 
 ---
 
@@ -25,7 +25,7 @@ The CLI is now available at `bun dist/cli.js` (or link to `$PATH` with `bun link
 Run the init command to create the config directory:
 
 ```bash
-bun dist/cli.js init
+agentsbox init
 ```
 
 **What this creates:**
@@ -43,7 +43,7 @@ bun dist/cli.js init
 **Dry-run first** (optional):
 
 ```bash
-bun dist/cli.js init --dry-run
+agentsbox init --dry-run
 ```
 
 ---
@@ -126,7 +126,7 @@ Edit `~/.config/agentsbox/config.jsonc` to add MCP servers.
 ### Option A: OpenCode
 
 ```bash
-bun dist/cli.js setup opencode
+agentsbox setup opencode
 ```
 
 **What this does:**
@@ -143,7 +143,7 @@ ls -la ~/.config/opencode/plugins/agentsbox.js
 ### Option B: pi
 
 ```bash
-bun dist/cli.js setup pi
+agentsbox setup pi
 ```
 
 **What this does:**

@@ -19,7 +19,7 @@ export AGENTSBOX_CONFIG=/path/to/config.jsonc
 Create a minimal/empty config + schema + bundled skill:
 
 ```bash
-bun dist/cli.js init
+agentsbox init
 ```
 
 ## Config schema
