@@ -156,6 +156,9 @@ git pull origin main
 ### Step 7: Trigger Release Workflow
 
 ```bash
+# Capture latest run id before triggering (prevents grabbing older runs)
+PREV_CREATE_RUN_ID=$(gh run list --workflow="Create Release PR" -L 1 --json databaseId -q '.[0].databaseId // empty')
+
 # Trigger with version type: auto | patch | minor | major
 gh workflow run "Create Release PR" -f version_type=auto
 ```
@@ -170,25 +173,18 @@ gh workflow run "Create Release PR" -f version_type=auto
 ### Step 8: Wait for Release Workflow
 
 ```bash
-# Wait for workflow run to appear
-sleep 5
-while [ "$(gh run list --workflow='Create Release PR' -L 1 --json status -q 'length')" -eq 0 ]; do
+# Wait for a NEW workflow run to appear (avoid older runs)
+CREATE_RUN_ID=""
+while [ -z "$CREATE_RUN_ID" ] || [ "$CREATE_RUN_ID" = "$PREV_CREATE_RUN_ID" ]; do
   sleep 5
+  CREATE_RUN_ID=$(gh run list --workflow="Create Release PR" -L 1 --json databaseId -q '.[0].databaseId // empty')
 done
 
-# Poll until workflow completes
-while true; do
-  status=$(gh run list --workflow="Create Release PR" -L 1 --json status,conclusion -q '.[0]')
-  conclusion=$(echo "$status" | jq -r '.conclusion // empty')
-  if [ "$conclusion" = "success" ]; then
-    echo "Workflow completed!"
-    break
-  elif [[ "$conclusion" = "failure" || "$conclusion" = "cancelled" || "$conclusion" = "skipped" ]]; then
-    echo "Workflow failed with conclusion: $conclusion"
-    exit 1
-  fi
-  sleep 5
-done
+echo "Watching 'Create Release PR' workflow (run ID: $CREATE_RUN_ID)..."
+if ! gh run watch "$CREATE_RUN_ID" --exit-status; then
+  echo "'Create Release PR' workflow failed." >&2
+  exit 1
+fi
 
 # Fetch the new release branch
 git fetch origin
@@ -211,25 +207,21 @@ gh pr merge "$RELEASE_PR" --squash
 ### Step 10: Wait for Publish Workflow
 
 ```bash
-# Wait for workflow run to appear
-sleep 5
-while [ "$(gh run list --workflow='Publish Release' -L 1 --json status -q 'length')" -eq 0 ]; do
+# Capture latest run id before triggering publish (prevents grabbing older runs)
+PREV_PUBLISH_RUN_ID=$(gh run list --workflow="Publish Release" -L 1 --json databaseId -q '.[0].databaseId // empty')
+
+# Wait for a NEW workflow run to appear (avoid older runs)
+PUBLISH_RUN_ID=""
+while [ -z "$PUBLISH_RUN_ID" ] || [ "$PUBLISH_RUN_ID" = "$PREV_PUBLISH_RUN_ID" ]; do
   sleep 5
+  PUBLISH_RUN_ID=$(gh run list --workflow="Publish Release" -L 1 --json databaseId -q '.[0].databaseId // empty')
 done
 
-# Poll until publish completes
-while true; do
-  status=$(gh run list --workflow="Publish Release" -L 1 --json status,conclusion -q '.[0]')
-  conclusion=$(echo "$status" | jq -r '.conclusion // empty')
-  if [ "$conclusion" = "success" ]; then
-    echo "Publish completed!"
-    break
-  elif [[ "$conclusion" = "failure" || "$conclusion" = "cancelled" || "$conclusion" = "skipped" ]]; then
-    echo "Publish failed with conclusion: $conclusion"
-    exit 1
-  fi
-  sleep 5
-done
+echo "Watching 'Publish Release' workflow (run ID: $PUBLISH_RUN_ID)..."
+if ! gh run watch "$PUBLISH_RUN_ID" --exit-status; then
+  echo "'Publish Release' workflow failed." >&2
+  exit 1
+fi
 
 # Verify release
 gh release list -L 1
@@ -280,21 +272,21 @@ gh pr merge "$PR_NUMBER" --squash
 git checkout main && git pull origin main
 
 # === STEP 7: Trigger release ===
+PREV_CREATE_RUN_ID=$(gh run list --workflow="Create Release PR" -L 1 --json databaseId -q '.[0].databaseId // empty')
 gh workflow run "Create Release PR" -f version_type="$VERSION_TYPE"
 
 # === STEP 8: Wait for release workflow ===
-sleep 5
-while [ "$(gh run list --workflow='Create Release PR' -L 1 --json status -q 'length')" -eq 0 ]; do sleep 5; done
-while true; do
-  conclusion=$(gh run list --workflow='Create Release PR' -L 1 --json conclusion -q '.[0].conclusion // empty')
-  if [ "$conclusion" = "success" ]; then
-    break
-  elif [[ "$conclusion" = "failure" || "$conclusion" = "cancelled" || "$conclusion" = "skipped" ]]; then
-    echo "'Create Release PR' workflow failed with conclusion: $conclusion"
-    exit 1
-  fi
+CREATE_RUN_ID=""
+while [ -z "$CREATE_RUN_ID" ] || [ "$CREATE_RUN_ID" = "$PREV_CREATE_RUN_ID" ]; do
   sleep 5
+  CREATE_RUN_ID=$(gh run list --workflow="Create Release PR" -L 1 --json databaseId -q '.[0].databaseId // empty')
 done
+
+echo "Watching 'Create Release PR' workflow (run ID: $CREATE_RUN_ID)..."
+if ! gh run watch "$CREATE_RUN_ID" --exit-status; then
+  echo "'Create Release PR' workflow failed." >&2
+  exit 1
+fi
 
 # === STEP 9: Merge release PR ===
 git fetch origin
@@ -306,18 +298,18 @@ fi
 gh pr merge "$RELEASE_PR" --squash
 
 # === STEP 10: Wait for publish ===
-sleep 5
-while [ "$(gh run list --workflow='Publish Release' -L 1 --json status -q 'length')" -eq 0 ]; do sleep 5; done
-while true; do
-  conclusion=$(gh run list --workflow='Publish Release' -L 1 --json conclusion -q '.[0].conclusion // empty')
-  if [ "$conclusion" = "success" ]; then
-    break
-  elif [[ "$conclusion" = "failure" || "$conclusion" = "cancelled" || "$conclusion" = "skipped" ]]; then
-    echo "'Publish Release' workflow failed with conclusion: $conclusion"
-    exit 1
-  fi
+PREV_PUBLISH_RUN_ID=$(gh run list --workflow="Publish Release" -L 1 --json databaseId -q '.[0].databaseId // empty')
+PUBLISH_RUN_ID=""
+while [ -z "$PUBLISH_RUN_ID" ] || [ "$PUBLISH_RUN_ID" = "$PREV_PUBLISH_RUN_ID" ]; do
   sleep 5
+  PUBLISH_RUN_ID=$(gh run list --workflow="Publish Release" -L 1 --json databaseId -q '.[0].databaseId // empty')
 done
+
+echo "Watching 'Publish Release' workflow (run ID: $PUBLISH_RUN_ID)..."
+if ! gh run watch "$PUBLISH_RUN_ID" --exit-status; then
+  echo "'Publish Release' workflow failed." >&2
+  exit 1
+fi
 
 # === STEP 11: Cleanup ===
 git checkout main && git pull origin main
