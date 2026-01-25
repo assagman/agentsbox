@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+require_cmd() {
+    local cmd="$1"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Error: '$cmd' not found in PATH" >&2
+        exit 1
+    fi
+}
+
+# External deps used by this script
+require_cmd fd
+require_cmd jq
+require_cmd rg
+require_cmd git
+
 # Helper to convert stdin lines to JSON array
 to_json_array() {
     # Read all input

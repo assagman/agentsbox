@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Check arguments
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <pr-number>"
-    echo "Example: $0 3"
+    echo "Example: $0 123"
     exit 1
 fi
 
@@ -38,12 +38,12 @@ echo -e "${BLUE}Fetching PR #${PR_NUMBER} review conversations...${NC}\n"
 # Get repository info
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 
-# Fetch review comments using GraphQL API
+# Fetch review comments using GraphQL API (paginated)
 QUERY=$(cat <<'EOF'
-query($owner: String!, $repo: String!, $number: Int!) {
+query($owner: String!, $repo: String!, $number: Int!, $endCursor: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $number) {
-      reviewThreads(first: 100) {
+      reviewThreads(first: 50, after: $endCursor) {
         nodes {
           id
           isResolved
@@ -61,6 +61,10 @@ query($owner: String!, $repo: String!, $number: Int!) {
             }
           }
         }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
   }
@@ -72,11 +76,16 @@ EOF
 OWNER=$(echo "$REPO" | cut -d'/' -f1)
 REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
 
-# Execute GraphQL query
-RESULT=$(gh api graphql -f query="$QUERY" -f owner="$OWNER" -f repo="$REPO_NAME" -F number="$PR_NUMBER")
-
-# Extract threads
-THREADS=$(echo "$RESULT" | jq '.data.repository.pullRequest.reviewThreads.nodes')
+# Execute paginated GraphQL query and merge thread nodes across pages
+THREADS=$(
+  gh api graphql --paginate \
+    -f query="$QUERY" \
+    -f owner="$OWNER" \
+    -f repo="$REPO_NAME" \
+    -F number="$PR_NUMBER" \
+    -F endCursor=null \
+  | jq -s '[.[].data.repository.pullRequest.reviewThreads.nodes[]]'
+)
 
 # Count totals
 TOTAL=$(echo "$THREADS" | jq 'length')
@@ -145,7 +154,7 @@ done
 echo -e "${BLUE}═══ Suggested Actions ═══${NC}"
 echo ""
 echo "To resolve outdated/invalid threads, use:"
-echo -e "  ${CYAN}gh pr review 3 --comment --body 'Resolving as outdated/fixed'${NC}"
+echo -e "  ${CYAN}gh pr review ${PR_NUMBER} --comment --body 'Resolving as outdated/fixed'${NC}"
 echo ""
 echo "Or resolve individual threads via GitHub UI:"
 echo -e "  ${CYAN}https://github.com/${REPO}/pull/${PR_NUMBER}/files${NC}"
