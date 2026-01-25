@@ -6,7 +6,7 @@
 
 - Uncommitted changes in `main` branch (tested, working)
 - `gh` CLI authenticated with repo access
-- Admin privileges on the repository (for bypassing review requirements)
+- `jq` for parsing JSON output (optional but recommended)
 
 ## Flow Diagram
 
@@ -31,11 +31,11 @@
 │  └────────┬────────┘                                                        │
 │           ▼                                                                 │
 │  ┌─────────────────┐                                                        │
-│  │ 4. Wait for CI   │◄──── Poll until pass/fail                             │
+│  │ 4. Wait for CI   │◄──── Use --watch for robustness                       │
 │  └────────┬────────┘                                                        │
 │           ▼                                                                 │
 │  ┌─────────────────┐                                                        │
-│  │ 5. Squash Merge  │──── Use --admin to bypass review                      │
+│  │ 5. Squash Merge  │──── Requires approval or --admin override             │
 │  └────────┬────────┘                                                        │
 │           ▼                                                                 │
 │  ┌─────────────────┐                                                        │
@@ -101,27 +101,18 @@ gh pr create \
 ### Step 4: Wait for CI
 
 ```bash
-# Poll until CI completes
-while true; do
-  status=$(gh pr checks <PR_NUMBER> 2>&1)
-  echo "$status"
-  if echo "$status" | grep -q "pass"; then
-    echo "CI passed!"
-    break
-  elif echo "$status" | grep -q "fail"; then
-    echo "CI failed!"
-    exit 1
-  fi
-  sleep 5
-done
+# Wait for CI to complete (automatic polling with failure detection)
+gh pr checks <PR_NUMBER> --watch
 ```
 
 ### Step 5: Squash & Merge
 
 ```bash
-# Merge with admin privileges (bypasses review requirement)
-gh pr merge <PR_NUMBER> --squash --admin
+# Merge when approved
+gh pr merge <PR_NUMBER> --squash
 ```
+
+> **Note:** If you have admin rights and need to bypass review requirements in an emergency, you can append `--admin` to the merge command.
 
 ### Step 6: Checkout Main & Pull
 
@@ -160,10 +151,11 @@ PR_URL=$(gh pr create --title "$COMMIT_MSG" --body "Add release workflow documen
 PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
 
 # === STEP 4: Wait for CI ===
-while ! gh pr checks "$PR_NUMBER" 2>&1 | grep -q "pass"; do sleep 5; done
+gh pr checks "$PR_NUMBER" --watch
 
 # === STEP 5: Merge ===
-gh pr merge "$PR_NUMBER" --squash --admin
+# Requires manual approval or --admin override if permitted
+gh pr merge "$PR_NUMBER" --squash
 
 # === STEP 6: Pull main ===
 git checkout main && git pull origin main
@@ -178,7 +170,7 @@ git log --oneline -3
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `CI failed` | Tests/lint failed | Fix issues, amend commit, force push |
-| `base branch policy prohibits merge` | Review required | Use `--admin` flag |
+| `base branch policy prohibits merge` | Review required | Obtain required approvals or use `--admin` if authorized |
 
 ## AI Agent Instructions
 
