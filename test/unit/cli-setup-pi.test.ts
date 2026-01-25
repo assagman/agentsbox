@@ -42,9 +42,9 @@ describe("agentsbox cli setup pi", () => {
       const out = proc.stdout.toString("utf8");
 
       // Extension symlink (paths shortened to ~ in output)
-      expect(out).toContain("~/.pi/agent/extensions/agentsbox.js");
+      expect(out).toContain("~/.pi/agent/extensions/agentsbox");
       expect(out).toContain("symlink");
-      expect(out).toContain("dist/pi.js");
+      expect(out).toContain("dist/pi-extension");
 
       // Skill symlink into pi's discovery path
       expect(out).toContain("~/.pi/agent/skills/agentsbox");
@@ -79,8 +79,8 @@ describe("agentsbox cli setup pi", () => {
 
       // We must still print a complete plan (paths shortened to ~ in output).
       expect(out).toContain("check");
-      expect(out).toContain("~/.pi/agent/extensions/agentsbox.js");
-      expect(out).toContain("dist/pi.js");
+      expect(out).toContain("~/.pi/agent/extensions/agentsbox");
+      expect(out).toContain("dist/pi-extension");
 
       // Skill symlink into pi's discovery path
       expect(out).toContain("~/.pi/agent/skills/agentsbox");
