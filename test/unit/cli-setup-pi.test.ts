@@ -41,14 +41,13 @@ describe("agentsbox cli setup pi", () => {
       expect(proc.exitCode).toBe(0);
       const out = proc.stdout.toString("utf8");
 
-      // Wrapper dir under XDG_CONFIG_HOME
-      expect(out).toContain(join(xdg, "agentsbox", "integrations", "pi", "extension"));
-
-      // pi symlink target under HOME
-      expect(out).toContain(join(home, ".pi", "agent", "extensions", "agentsbox"));
-
-      // Ensure we planned a link step
+      // Extension symlink (paths shortened to ~ in output)
+      expect(out).toContain("~/.pi/agent/extensions/agentsbox");
       expect(out).toContain("symlink");
+      expect(out).toContain("dist/pi-extension");
+
+      // Skill symlink into pi's discovery path
+      expect(out).toContain("~/.pi/agent/skills/agentsbox");
     } finally {
       await rm(sandboxRoot, { recursive: true, force: true });
       await rm(home, { recursive: true, force: true });
@@ -78,10 +77,13 @@ describe("agentsbox cli setup pi", () => {
       expect(proc.exitCode).toBe(0);
       const out = proc.stdout.toString("utf8");
 
-      // We must still print a complete plan.
+      // We must still print a complete plan (paths shortened to ~ in output).
       expect(out).toContain("check");
-      expect(out).toContain(join(xdg, "agentsbox", "integrations", "pi", "extension"));
-      expect(out).toContain(join(home, ".pi", "agent", "extensions", "agentsbox"));
+      expect(out).toContain("~/.pi/agent/extensions/agentsbox");
+      expect(out).toContain("dist/pi-extension");
+
+      // Skill symlink into pi's discovery path
+      expect(out).toContain("~/.pi/agent/skills/agentsbox");
     } finally {
       await rm(sandboxRoot, { recursive: true, force: true });
       await rm(home, { recursive: true, force: true });
