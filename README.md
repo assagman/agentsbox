@@ -30,7 +30,7 @@ This creates the config directory under `$XDG_CONFIG_HOME/agentsbox` (usually `~
 #### OpenCode
 
 ```bash
-npx agentsbox setup opencode
+agentsbox setup opencode
 ```
 
 Installs the plugin by copying `dist/opencode.js` to `~/.config/opencode/plugins/agentsbox.js` (auto-loaded by OpenCode).
@@ -38,7 +38,7 @@ Installs the plugin by copying `dist/opencode.js` to `~/.config/opencode/plugins
 #### pi
 
 ```bash
-npx agentsbox setup pi
+agentsbox setup pi
 ```
 
 Installs extension by symlinking to `~/.pi/agent/extensions/agentsbox` (auto-loaded by pi).
@@ -233,7 +233,7 @@ agentsbox/
 
 ## License
 
-MIT © [Sercan Sivri](https://github.com/assagman)
+MIT
 
 ---
 

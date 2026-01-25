@@ -29,7 +29,22 @@ async function main() {
 
   // Avoid symlink entirely for portability: create a tiny re-export shim.
   // This replaces the previous `ln -sf ../pi.js dist/pi-extension/index.js`.
-  await writeFile(indexJsPath, 'export { default } from "../pi.js";\n', "utf8");
+  // NOTE: We resolve realpath to ensure symlinked extension dirs can find dist/pi.js.
+  await writeFile(
+    indexJsPath,
+    `import { realpath } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const realHere = await realpath(here);
+const targetUrl = pathToFileURL(join(realHere, "..", "pi.js")).href;
+const mod = await import(targetUrl);
+
+export default mod.default;
+`,
+    "utf8",
+  );
 }
 
 main().catch((err) => {

@@ -248,13 +248,15 @@ We use Biome for code formatting and linting.
 
 ### Rules
 
-- Use TypeScript for all source files
-- Use ES modules (`import`/`export`)
-- 2 space indentation
-- No semicolons
-- Single quotes for strings
-- Prefer `const` over `let`
-- Use explicit return types for functions
+| Rule | Standard |
+|---|---|
+| Language | TypeScript for all source files |
+| Modules | ES modules (`import`/`export`) |
+| Indentation | 2 spaces (Biome) |
+| Quotes | Double quotes (Biome) |
+| Semicolons | Use semicolons (Biome default) |
+| Variables | Prefer `const` over `let` |
+| Return types | Prefer explicit return types for exported/public functions |
 
 ### Pre-commit Hooks
 
