@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [0.1.1] - 2026-01-25
+
+### Fixed
+- **pi**: install extension as symlinked directory (#4)
+
+
 ## [0.1.0] - 2026-01-23
 
 Initial public release.
