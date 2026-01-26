@@ -69,7 +69,7 @@
   },
   "dependencies": {
     "@mariozechner/pi-coding-agent": "^0.49.2",
-    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@modelcontextprotocol/sdk": "^1.25.3",
     "@opencode-ai/plugin": "^1.1.6",
     "@sinclair/typebox": "^0.34.41",
     "jsonc-parser": "^3.3.1",
