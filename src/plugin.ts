@@ -212,6 +212,52 @@ function generateMinimalArgs(schema: Record<string, unknown>): Record<string, un
  */
 const isTestEnv = process.env.NODE_ENV === "test" || !!process.env.BUN_TEST;
 
+// We must assume tool arguments / server configs may contain secrets.
+// Never write them verbatim to disk.
+const SENSITIVE_LOG_KEYS = new Set([
+  "authorization",
+  "cookie",
+  "set-cookie",
+  "token",
+  "accessToken",
+  "refreshToken",
+  "apiKey",
+  "apikey",
+  "secret",
+  "password",
+  "headers",
+  "arguments",
+  "environment",
+  "command",
+  "commandString",
+  "url",
+]);
+
+function redactForLog(value: unknown, depth: number = 0): unknown {
+  if (depth > 6) return "[REDACTED:DEPTH]";
+  if (value === null || value === undefined) return value;
+
+  if (typeof value === "string") {
+    return value.length > 256 ? `${value.slice(0, 256)}…` : value;
+  }
+
+  if (typeof value !== "object") return value;
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 50).map((v) => redactForLog(v, depth + 1));
+  }
+
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (SENSITIVE_LOG_KEYS.has(k)) {
+      out[k] = "[REDACTED]";
+      continue;
+    }
+    out[k] = redactForLog(v, depth + 1);
+  }
+  return out;
+}
+
 /**
  * Safe logging helper - writes to ~/.local/share/agentsbox/agentsbox.log
  * Never blocks or throws. Skips logging in test environment.
@@ -221,7 +267,11 @@ function log(level: string, message: string, extra?: any) {
   if (isTestEnv) return;
 
   const timestamp = new Date().toISOString();
-  const extraStr = extra ? ` ${JSON.stringify(extra)}` : "";
+  const extraJson = extra ? JSON.stringify(redactForLog(extra)) : "";
+  const maxExtraBytes = 2048;
+  const extraStr = extraJson
+    ? ` ${extraJson.length > maxExtraBytes ? `${extraJson.slice(0, maxExtraBytes)}…` : extraJson}`
+    : "";
   const line = `${timestamp} [${level.toUpperCase()}] ${message}${extraStr}\n`;
 
   // Fire and forget - never block
@@ -638,7 +688,7 @@ export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
               timer();
               log("warn", `Failed to parse arguments as JSON for ${args.toolId}`, {
                 toolId: args.toolId,
-                arguments: args.arguments,
+                argumentsLength: args.arguments.length,
               });
               return JSON.stringify({
                 success: false,
