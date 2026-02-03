@@ -86,7 +86,12 @@ function buildSearchableText(
     }
   }
 
-  return parts.join(" ");
+  const text = parts.join(" ");
+
+  // Bound match input size to mitigate worst-case regex/runtime behavior.
+  // (Regex DoS can happen even with short patterns if the input is huge.)
+  const MAX_SEARCHABLE_TEXT = 4000;
+  return text.length > MAX_SEARCHABLE_TEXT ? text.slice(0, MAX_SEARCHABLE_TEXT) : text;
 }
 
 /**

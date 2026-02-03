@@ -387,4 +387,73 @@ describe("MCPManager - Connection Retry", () => {
 
     await manager.closeAll();
   });
+
+  test("closes client on connect failure", async () => {
+    const created: Array<{ closeCalls: number }> = [];
+
+    class CloseTrackingClient extends FakeMCPClient {
+      closeCalls = 0;
+      override async close(): Promise<void> {
+        this.closeCalls++;
+        await super.close();
+      }
+    }
+
+    const manager = new MCPManager({
+      clientFactory: () => {
+        const c = new CloseTrackingClient({ tools: [], failConnect: true });
+        created.push(c);
+        return c;
+      },
+      connectionConfig: {
+        connectTimeout: 1000,
+        requestTimeout: 5000,
+        retryAttempts: 0,
+        retryDelay: 10,
+      },
+    });
+
+    await manager.initialize({ time: { type: "local" } });
+
+    expect(manager.getInitState()).toBe("degraded");
+    expect(created).toHaveLength(1);
+    expect(created[0]!.closeCalls).toBe(1);
+
+    await manager.closeAll();
+  });
+
+  test("closes client on listTools failure", async () => {
+    const created: Array<{ closeCalls: number; isConnected: () => boolean }> = [];
+
+    class CloseTrackingClient extends FakeMCPClient {
+      closeCalls = 0;
+      override async close(): Promise<void> {
+        this.closeCalls++;
+        await super.close();
+      }
+    }
+
+    const manager = new MCPManager({
+      clientFactory: () => {
+        const c = new CloseTrackingClient({ tools: [], failListTools: true });
+        created.push(c);
+        return c;
+      },
+      connectionConfig: {
+        connectTimeout: 1000,
+        requestTimeout: 5000,
+        retryAttempts: 0,
+        retryDelay: 10,
+      },
+    });
+
+    await manager.initialize({ time: { type: "local" } });
+
+    expect(manager.getInitState()).toBe("degraded");
+    expect(created).toHaveLength(1);
+    expect(created[0]!.closeCalls).toBe(1);
+    expect(created[0]!.isConnected()).toBe(false);
+
+    await manager.closeAll();
+  });
 });

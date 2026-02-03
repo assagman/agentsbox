@@ -169,6 +169,36 @@ describe("LocalMCPClient", () => {
       expect(Object.keys(capturedEnv).length).toBeGreaterThan(1);
     });
 
+    test("respects inheritProcessEnv=false (minimal env)", async () => {
+      process.env.SECRET_X = "nope";
+      try {
+        let capturedEnv: Record<string, string> = {};
+        const client = new LocalMCPClient(
+          {
+            name: "test",
+            type: "local",
+            command: ["node"],
+            inheritProcessEnv: false,
+            environment: { CUSTOM: "value" },
+          },
+          {
+            clientFactory: createMockClientFactory(),
+            transportFactory: (opts) => {
+              capturedEnv = opts.env;
+              return { close: async () => {} };
+            },
+          },
+        );
+
+        await client.connect();
+
+        expect(capturedEnv.CUSTOM).toBe("value");
+        expect(capturedEnv.SECRET_X).toBeUndefined();
+      } finally {
+        delete process.env.SECRET_X;
+      }
+    });
+
     test("propagates connection errors", async () => {
       const client = new LocalMCPClient(
         { name: "test", type: "local", command: ["node"] },

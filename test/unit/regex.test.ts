@@ -89,6 +89,20 @@ test("regex search with invalid pattern", () => {
   });
 });
 
+test("regex search rejects unsafe patterns (ReDoS)", () => {
+  const tools = [createMockTool("gmail", "send_email", "Send an email")];
+
+  // Classic catastrophic-backtracking pattern.
+  const result = searchWithRegex(tools, "(a+)+$");
+
+  expect(result).toEqual({
+    error: {
+      code: "invalid_pattern",
+      message: "Unsafe regex pattern (potential ReDoS)",
+    },
+  });
+});
+
 test("regex search with empty pattern", () => {
   const tools = [
     createMockTool("gmail", "send_email", "Send an email"),

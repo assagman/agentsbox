@@ -11,6 +11,12 @@ export const LocalServerConfigSchema = z.object({
     .record(z.string(), z.string())
     .optional()
     .describe("Environment variables for the process"),
+  inheritProcessEnv: z
+    .boolean()
+    .default(true)
+    .describe(
+      "If true, pass the full parent process.env to the local server process (default: true)",
+    ),
 });
 
 /**

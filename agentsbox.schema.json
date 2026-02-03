@@ -35,6 +35,11 @@
                 "type": "object",
                 "additionalProperties": { "type": "string" },
                 "description": "Environment variables for the process. Use {env:VAR_NAME} for interpolation."
+              },
+              "inheritProcessEnv": {
+                "type": "boolean",
+                "default": true,
+                "description": "If true, pass the full parent process.env to the local server process (default: true)"
               }
             },
             "required": ["type", "command"],

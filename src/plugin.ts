@@ -36,18 +36,20 @@ Highlight any failed servers or issues.
 
 /**
  * Parse tool name into server and original tool name
- * Format: "serverName_toolName" where serverName may contain underscores
+ * Format: "serverName_toolName" where serverName MUST NOT contain underscores.
  */
 function parseToolName(fullName: string): { serverName: string; toolName: string } | null {
   const underscoreIndex = fullName.indexOf("_");
-  if (underscoreIndex === -1) {
+  if (underscoreIndex <= 0 || underscoreIndex === fullName.length - 1) {
     return null;
   }
 
-  return {
-    serverName: fullName.substring(0, underscoreIndex),
-    toolName: fullName.substring(underscoreIndex + 1),
-  };
+  const serverName = fullName.substring(0, underscoreIndex);
+  const toolName = fullName.substring(underscoreIndex + 1);
+
+  if (!serverName || !toolName) return null;
+
+  return { serverName, toolName };
 }
 
 /**
@@ -412,6 +414,18 @@ export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
   }
 
   const config = configResult.data;
+
+  // Tool IDs use '_' as delimiter: {serverName}_{toolName}
+  // Enforce serverName without underscores to keep parsing unambiguous.
+  const invalidServerNames = Object.keys(config.mcp).filter((name) => name.includes("_"));
+  if (invalidServerNames.length > 0) {
+    const errorMsg =
+      `Invalid MCP server name(s): ${invalidServerNames.join(", ")}. ` +
+      `Server names must not contain '_' because toolId format is {serverName}_{toolName}.`;
+    log("error", errorMsg, { invalidServerNames });
+    return {};
+  }
+
   const initMode = config.settings?.initMode || "eager";
   const connectionConfig: ConnectionConfig = {
     connectTimeout: config.settings?.connection?.connectTimeout || 5000,
@@ -549,7 +563,8 @@ export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
           }
 
           searchCount++;
-          const searchLimit = args.limit || config.settings?.defaultLimit || 5;
+          const rawLimit = args.limit ?? config.settings?.defaultLimit ?? 5;
+          const searchLimit = Math.max(1, Math.min(rawLimit, 50));
           const allTools = mcpManager.getAllCatalogTools();
           const results = bm25Index.search(args.text, searchLimit);
           const duration = timer();
@@ -603,7 +618,8 @@ export const AgentsboxPlugin: Plugin = async (_ctx: PluginInput) => {
           }
 
           searchCount++;
-          const searchLimit = args.limit || config.settings?.defaultLimit || 5;
+          const rawLimit = args.limit ?? config.settings?.defaultLimit ?? 5;
+          const searchLimit = Math.max(1, Math.min(rawLimit, 50));
           const allTools = mcpManager.getAllCatalogTools();
           const result = searchWithRegex(allTools, args.pattern, searchLimit);
           const duration = timer();

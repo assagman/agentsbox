@@ -1,3 +1,4 @@
+import safeRegex from "safe-regex2";
 import type { CatalogTool, SearchResult } from "../catalog/types";
 
 export const MAX_REGEX_LENGTH = 200;
@@ -36,6 +37,16 @@ export function searchWithRegex(
   if (pattern.startsWith("(?i)")) {
     flags = "i";
     searchPattern = pattern.slice(4);
+  }
+
+  // Reject patterns likely to cause catastrophic backtracking (ReDoS)
+  if (!safeRegex(searchPattern)) {
+    return {
+      error: {
+        code: "invalid_pattern",
+        message: "Unsafe regex pattern (potential ReDoS)",
+      },
+    };
   }
 
   // Try to compile the regex

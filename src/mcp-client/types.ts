@@ -7,6 +7,8 @@ export type LocalMCPServerConfig = {
   type: "local";
   command?: string[];
   environment?: Record<string, string>;
+  /** If true, pass the full parent process.env to the child process (default: true) */
+  inheritProcessEnv?: boolean;
 };
 
 export type RemoteMCPServerConfig = {

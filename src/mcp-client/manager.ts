@@ -61,10 +61,15 @@ function sleep(ms: number): Promise<void> {
  * Race a promise against a timeout
  */
 function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(errorMessage)), ms)),
-  ]);
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(errorMessage)), ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  });
 }
 
 export class MCPManager extends EventEmitter {
@@ -217,18 +222,30 @@ export class MCPManager extends EventEmitter {
     const client = this.clientFactory(name, config);
 
     // Connect with timeout
-    await withTimeout(
-      client.connect(),
-      this.connectionConfig.connectTimeout,
-      `Connection to ${name} timed out after ${this.connectionConfig.connectTimeout}ms`,
-    );
+    try {
+      await withTimeout(
+        client.connect(),
+        this.connectionConfig.connectTimeout,
+        `Connection to ${name} timed out after ${this.connectionConfig.connectTimeout}ms`,
+      );
+    } catch (error) {
+      // Best-effort cleanup to avoid orphaned local processes / hung connections.
+      await client.close().catch(() => {});
+      throw error;
+    }
 
     // Fetch tools with timeout
-    const tools = await withTimeout(
-      client.listTools(),
-      this.connectionConfig.requestTimeout,
-      `Listing tools from ${name} timed out after ${this.connectionConfig.requestTimeout}ms`,
-    );
+    let tools: Awaited<ReturnType<MCPClient["listTools"]>>;
+    try {
+      tools = await withTimeout(
+        client.listTools(),
+        this.connectionConfig.requestTimeout,
+        `Listing tools from ${name} timed out after ${this.connectionConfig.requestTimeout}ms`,
+      );
+    } catch (error) {
+      await client.close().catch(() => {});
+      throw error;
+    }
 
     const catalogTools = normalizeTools(name, tools);
     const connectTime = performance.now() - startTime;

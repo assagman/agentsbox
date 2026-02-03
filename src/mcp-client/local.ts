@@ -2,6 +2,32 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { LocalMCPServerConfig, MCPClient } from "./types";
 
+const MINIMAL_ENV_KEYS = [
+  // Common
+  "PATH",
+  "HOME",
+  "USER",
+  "LOGNAME",
+  "SHELL",
+  "TMPDIR",
+  "TMP",
+  "TEMP",
+  // Windows (harmless on unix)
+  "SystemRoot",
+  "WINDIR",
+  "ComSpec",
+  "PATHEXT",
+];
+
+function getMinimalProcessEnv(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const k of MINIMAL_ENV_KEYS) {
+    const v = process.env[k];
+    if (typeof v === "string") out[k] = v;
+  }
+  return out;
+}
+
 /**
  * Transport-like interface for DI/testing
  */
@@ -65,12 +91,17 @@ export class LocalMCPClient implements MCPClient {
       throw new Error(`Local MCP server ${this.name} has no command`);
     }
 
+    const baseEnv =
+      this.config.inheritProcessEnv === false
+        ? getMinimalProcessEnv()
+        : (process.env as Record<string, string>);
+
     this.transport = this.transportFactory({
       command: this.config.command[0]!,
       args: this.config.command.slice(1),
       env: {
-        ...(process.env as Record<string, string>),
-        ...this.config.environment,
+        ...baseEnv,
+        ...(this.config.environment ?? {}),
       },
       stderr: "pipe" as const,
     });

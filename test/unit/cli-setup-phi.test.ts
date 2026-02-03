@@ -19,15 +19,15 @@ async function createSandboxPackageRoot(): Promise<string> {
   return sandboxRoot;
 }
 
-describe("agentsbox cli setup pi", () => {
+describe("agentsbox cli setup phi", () => {
   test("prints a plan in --dry-run mode", async () => {
     const sandboxRoot = await createSandboxPackageRoot();
-    const home = await mkdtemp(join(tmpdir(), "agentsbox-pi-home-"));
-    const xdg = await mkdtemp(join(tmpdir(), "agentsbox-pi-xdg-"));
+    const home = await mkdtemp(join(tmpdir(), "agentsbox-phi-home-"));
+    const xdg = await mkdtemp(join(tmpdir(), "agentsbox-phi-xdg-"));
 
     try {
       const proc = Bun.spawnSync({
-        cmd: ["bun", "src/cli.ts", "setup", "pi", "--dry-run"],
+        cmd: ["bun", "src/cli.ts", "setup", "phi", "--dry-run"],
         cwd: sandboxRoot,
         env: {
           ...process.env,
@@ -42,9 +42,9 @@ describe("agentsbox cli setup pi", () => {
       const out = proc.stdout.toString("utf8");
 
       // Extension symlink (paths shortened to ~ in output)
-      expect(out).toContain("~/.pi/agent/extensions/agentsbox");
+      expect(out).toContain("~/.phi/agent/extensions/agentsbox");
       expect(out).toContain("symlink");
-      expect(out).toContain("dist/pi-extension");
+      expect(out).toContain("dist/phi-extension");
 
       // Skill symlink into shared skills dir
       expect(out).toContain("~/.agents/skills/agentsbox");
@@ -55,15 +55,15 @@ describe("agentsbox cli setup pi", () => {
     }
   });
 
-  test("--dry-run prints plan even when dist/pi.js is missing", async () => {
+  test("--dry-run prints plan even when dist/phi.js is missing", async () => {
     const sandboxRoot = await createSandboxPackageRoot();
-    const home = await mkdtemp(join(tmpdir(), "agentsbox-pi-home-"));
-    const xdg = await mkdtemp(join(tmpdir(), "agentsbox-pi-xdg-"));
+    const home = await mkdtemp(join(tmpdir(), "agentsbox-phi-home-"));
+    const xdg = await mkdtemp(join(tmpdir(), "agentsbox-phi-xdg-"));
 
     try {
       // NOTE: sandbox has no dist/ folder by default.
       const proc = Bun.spawnSync({
-        cmd: ["bun", "src/cli.ts", "setup", "pi", "--dry-run"],
+        cmd: ["bun", "src/cli.ts", "setup", "phi", "--dry-run"],
         cwd: sandboxRoot,
         env: {
           ...process.env,
@@ -79,8 +79,8 @@ describe("agentsbox cli setup pi", () => {
 
       // We must still print a complete plan (paths shortened to ~ in output).
       expect(out).toContain("check");
-      expect(out).toContain("~/.pi/agent/extensions/agentsbox");
-      expect(out).toContain("dist/pi-extension");
+      expect(out).toContain("~/.phi/agent/extensions/agentsbox");
+      expect(out).toContain("dist/phi-extension");
 
       // Skill symlink into shared skills dir
       expect(out).toContain("~/.agents/skills/agentsbox");

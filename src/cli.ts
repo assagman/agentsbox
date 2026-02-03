@@ -47,6 +47,7 @@ Usage:
   agentsbox init [--dry-run] [--force]
   agentsbox setup opencode [--dry-run] [--force]
   agentsbox setup pi [--dry-run] [--force]
+  agentsbox setup phi [--dry-run] [--force]
 
 Commands:
   init
@@ -58,11 +59,15 @@ Commands:
   setup pi
     Install agentsbox as a local pi extension (auto-discovered).
 
+  setup phi
+    Install agentsbox as a local phi extension (auto-discovered).
+
 Defaults:
   agentsbox config dir:  ~/.config/agentsbox
   OpenCode plugins dir:  ~/.config/opencode/plugins
   pi extensions dir:     ~/.pi/agent/extensions
-  pi skills dir:         ~/.pi/agent/skills
+  phi extensions dir:    ~/.phi/agent/extensions
+  skills dir:            ~/.agents/skills
 
 Options:
   --dry-run    Print planned filesystem changes only
@@ -565,50 +570,51 @@ async function planSetupOpencode(opts: {
   return actions;
 }
 
-async function planSetupPi(opts: {
+async function planSetupAgent(opts: {
+  agentName: "pi" | "phi";
   configDir: string;
   force: boolean;
   pkgRoot: string;
-  piExtensionsDir: string;
-  piSkillsDir: string;
+  extensionsDir: string;
+  sharedSkillsDir: string;
 }): Promise<Action[]> {
-  const { configDir, force, pkgRoot, piExtensionsDir, piSkillsDir } = opts;
+  const { agentName, configDir, force, pkgRoot, extensionsDir, sharedSkillsDir } = opts;
 
   const actions: Action[] = [];
 
-  // dist/pi.js is a fully-bundled entrypoint — no wrapper needed.
-  const srcPiEntrypoint = join(pkgRoot, "dist", "pi.js");
-  actions.push({ kind: "assert-exists", path: srcPiEntrypoint, hint: "Run: bun run build" });
+  // dist/{agent}.js is a fully-bundled entrypoint — no wrapper needed.
+  const srcEntrypoint = join(pkgRoot, "dist", `${agentName}.js`);
+  actions.push({ kind: "assert-exists", path: srcEntrypoint, hint: "Run: bun run build" });
 
   // Ensure agentsbox config + skill
   actions.push(...(await planInit({ configDir, force, pkgRoot })));
 
   // Clean up legacy flat symlink (pre-v0.3 created agentsbox.js directly).
-  const legacyFlatSymlink = join(piExtensionsDir, "agentsbox.js");
+  const legacyFlatSymlink = join(extensionsDir, "agentsbox.js");
   actions.push({ kind: "remove", path: legacyFlatSymlink, onlyIfSymlink: true });
 
-  // Symlink entire extension directory: ~/.pi/agent/extensions/agentsbox/ → dist/pi-extension/
-  // dist/pi-extension/ contains: package.json (type:module) + index.js → ../pi.js
-  const srcExtDir = join(pkgRoot, "dist", "pi-extension");
+  // Symlink entire extension directory: ~/.{agent}/agent/extensions/agentsbox/ → dist/{agent}-extension/
+  // dist/{agent}-extension/ contains: package.json (type:module) + index.js → ../{agent}.js
+  const srcExtDir = join(pkgRoot, "dist", `${agentName}-extension`);
   actions.push({ kind: "assert-exists", path: srcExtDir, hint: "Run: bun run build" });
 
-  actions.push({ kind: "mkdir", path: piExtensionsDir });
+  actions.push({ kind: "mkdir", path: extensionsDir });
   actions.push({
     kind: "symlink",
     from: srcExtDir,
-    to: join(piExtensionsDir, "agentsbox"),
+    to: join(extensionsDir, "agentsbox"),
     mode: force ? "overwrite" : "link-if-different",
   });
 
-  // Symlink skill into pi's skill discovery path (~/.pi/agent/skills/agentsbox).
-  // Pi discovers skills from ~/.pi/agent/skills/**/SKILL.md recursively.
+  // Symlink skill into shared skills dir (~/.agents/skills/agentsbox).
+  // As of Feb 2026, all coding agents use this unified location.
   const destSkillDir = join(configDir, "skill", "agentsbox");
-  const piSkillLink = join(piSkillsDir, "agentsbox");
-  actions.push({ kind: "mkdir", path: piSkillsDir });
+  const skillLink = join(sharedSkillsDir, "agentsbox");
+  actions.push({ kind: "mkdir", path: sharedSkillsDir });
   actions.push({
     kind: "symlink",
     from: destSkillDir,
-    to: piSkillLink,
+    to: skillLink,
     mode: force ? "overwrite" : "link-if-different",
   });
 
@@ -632,7 +638,8 @@ async function main() {
   const configDir = join(xdgConfigHome, "agentsbox");
   const opencodePluginsDir = join(xdgConfigHome, "opencode", "plugins");
   const piExtensionsDir = join(homedir(), ".pi", "agent", "extensions");
-  const piSkillsDir = join(homedir(), ".pi", "agent", "skills");
+  const phiExtensionsDir = join(homedir(), ".phi", "agent", "extensions");
+  const sharedSkillsDir = join(homedir(), ".agents", "skills");
 
   if (cmd === "init") {
     const actions = await planInit({ configDir, force, pkgRoot });
@@ -650,12 +657,26 @@ async function main() {
     }
 
     if (target === "pi") {
-      const actions = await planSetupPi({
+      const actions = await planSetupAgent({
+        agentName: "pi",
         configDir,
         force,
         pkgRoot,
-        piExtensionsDir,
-        piSkillsDir,
+        extensionsDir: piExtensionsDir,
+        sharedSkillsDir,
+      });
+      await applyPlannedActions(actions, { dryRun, force });
+      return;
+    }
+
+    if (target === "phi") {
+      const actions = await planSetupAgent({
+        agentName: "phi",
+        configDir,
+        force,
+        pkgRoot,
+        extensionsDir: phiExtensionsDir,
+        sharedSkillsDir,
       });
       await applyPlannedActions(actions, { dryRun, force });
       return;

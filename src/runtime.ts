@@ -150,12 +150,14 @@ function generateMinimalArgs(schema: Record<string, unknown>): Record<string, un
  */
 export function parseToolId(fullName: string): { serverName: string; toolName: string } | null {
   const underscoreIndex = fullName.indexOf("_");
-  if (underscoreIndex === -1) return null;
+  if (underscoreIndex <= 0 || underscoreIndex === fullName.length - 1) return null;
 
-  return {
-    serverName: fullName.substring(0, underscoreIndex),
-    toolName: fullName.substring(underscoreIndex + 1),
-  };
+  const serverName = fullName.substring(0, underscoreIndex);
+  const toolName = fullName.substring(underscoreIndex + 1);
+
+  if (!serverName || !toolName) return null;
+
+  return { serverName, toolName };
 }
 
 /**
@@ -398,7 +400,8 @@ export async function createAgentsboxRuntime(
     }
 
     searchCount++;
-    const searchLimit = args.limit || config.settings?.defaultLimit || 5;
+    const rawLimit = args.limit ?? config.settings?.defaultLimit ?? 5;
+    const searchLimit = Math.max(1, Math.min(rawLimit, 50));
     const allTools = mcpManager.getAllCatalogTools();
     const results = bm25Index.search(args.text, searchLimit);
     timer();
@@ -419,7 +422,8 @@ export async function createAgentsboxRuntime(
     }
 
     searchCount++;
-    const searchLimit = args.limit || config.settings?.defaultLimit || 5;
+    const rawLimit = args.limit ?? config.settings?.defaultLimit ?? 5;
+    const searchLimit = Math.max(1, Math.min(rawLimit, 50));
     const allTools = mcpManager.getAllCatalogTools();
     const result = searchWithRegex(allTools, args.pattern, searchLimit);
 
